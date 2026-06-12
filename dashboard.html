@@ -57,21 +57,6 @@
       body.innerHTML = (events && events.length) ? events.map(e=>`<tr><td>${e.marker||'—'}</td><td>${e.action}</td><td>${e.file_name||'—'}</td><td><span class="tag ${e.status==='success'?'':'off'}">${e.status}</span></td></tr>`).join('') : '<tr><td colspan="4">Подій ще немає</td></tr>';
     });
   </script>
-
-  <script>
-    window.addEventListener('DOMContentLoaded', () => {
-      const logoutBtn = document.getElementById('logoutBtn');
-      if (!logoutBtn || !window.rebusAuth?.supabase) return;
-
-      logoutBtn.addEventListener('click', async () => {
-        logoutBtn.disabled = true;
-        logoutBtn.textContent = 'Вихід...';
-        await window.rebusAuth.supabase.auth.signOut();
-        window.location.href = 'index.html';
-      });
-    });
-    window.rebusLogoutHandler = true;
-  </script>
-
+  <script src="js/logout.js" defer></script>
 </body>
 </html>

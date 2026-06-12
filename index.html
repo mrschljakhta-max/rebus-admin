@@ -18,30 +18,8 @@
     </section>
   </main>
 
-
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  
-<script src="js/config.js"></script>
-  
-<script src="js/auth.js" defer></script>
-
-
-  <script>
-    window.addEventListener('DOMContentLoaded', async () => {
-      const { supabase, setStatus, routeAfterLogin } = window.rebusAuth;
-      const params = new URLSearchParams(location.search);
-      if (params.get('error') === 'access_denied') setStatus('Доступ заборонено.', 'error');
-      const { data } = await supabase.auth.getSession();
-      if (data.session) await routeAfterLogin();
-      document.getElementById('googleBtn').addEventListener('click', async () => {
-        setStatus('Переадресовую на Google...');
-        const redirectTo = location.origin + location.pathname.replace('index.html','') + 'index.html';
-        const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo } });
-        if (error) setStatus(error.message, 'error');
-      });
-      supabase.auth.onAuthStateChange((_event, session) => { if (session) routeAfterLogin(); });
-    });
-  </script>
-
+  <script src="js/config.js"></script>
+  <script src="js/auth.js" defer></script>
 </body>
 </html>

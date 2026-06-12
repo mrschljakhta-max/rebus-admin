@@ -3,20 +3,5 @@
         <button id="logoutBtn" class="logout-btn" type="button">Вийти</button>
       </div>
 
-    </aside><main class="main"><div class="topbar"><h2>Журнал подій</h2><div class="user-pill" id="adminEmail"></div></div><section class="panel"><div class="panel-header"><h3>Останні події</h3></div><table class="table"><thead><tr><th>Дата</th><th>Маркер</th><th>Email</th><th>Дія</th><th>Файл</th><th>Статус</th></tr></thead><tbody id="body"><tr><td colspan="6">Завантаження...</td></tr></tbody></table></section></main></div><script>window.addEventListener('DOMContentLoaded',async()=>{const{supabase,requireAdmin,getAal}=window.rebusAuth;const ctx=await requireAdmin();if(!ctx)return;if(await getAal()!=='aal2'){location.href='verify-2fa.html';return}adminEmail.textContent=ctx.session.user.email;const{data}=await supabase.from('rebus_events').select('*').order('created_at',{ascending:false}).limit(100);body.innerHTML=(data&&data.length)?data.map(e=>`<tr><td>${new Date(e.created_at).toLocaleString('uk-UA')}</td><td>${e.marker||'—'}</td><td>${e.email||'—'}</td><td>${e.action}</td><td>${e.file_name||'—'}</td><td><span class="tag ${e.status==='success'?'':'off'}">${e.status}</span></td></tr>`).join(''):'<tr><td colspan="6">Подій ще немає</td></tr>'})</script>
-  <script>
-    window.addEventListener('DOMContentLoaded', () => {
-      const logoutBtn = document.getElementById('logoutBtn');
-      if (!logoutBtn || !window.rebusAuth?.supabase) return;
-
-      logoutBtn.addEventListener('click', async () => {
-        logoutBtn.disabled = true;
-        logoutBtn.textContent = 'Вихід...';
-        await window.rebusAuth.supabase.auth.signOut();
-        window.location.href = 'index.html';
-      });
-    });
-    window.rebusLogoutHandler = true;
-  </script>
-
+    </aside><main class="main"><div class="topbar"><h2>Журнал подій</h2><div class="user-pill" id="adminEmail"></div></div><section class="panel"><div class="panel-header"><h3>Останні події</h3></div><table class="table"><thead><tr><th>Дата</th><th>Маркер</th><th>Email</th><th>Дія</th><th>Файл</th><th>Статус</th></tr></thead><tbody id="body"><tr><td colspan="6">Завантаження...</td></tr></tbody></table></section></main></div><script>window.addEventListener('DOMContentLoaded',async()=>{const{supabase,requireAdmin,getAal}=window.rebusAuth;const ctx=await requireAdmin();if(!ctx)return;if(await getAal()!=='aal2'){location.href='verify-2fa.html';return}adminEmail.textContent=ctx.session.user.email;const{data}=await supabase.from('rebus_events').select('*').order('created_at',{ascending:false}).limit(100);body.innerHTML=(data&&data.length)?data.map(e=>`<tr><td>${new Date(e.created_at).toLocaleString('uk-UA')}</td><td>${e.marker||'—'}</td><td>${e.email||'—'}</td><td>${e.action}</td><td>${e.file_name||'—'}</td><td><span class="tag ${e.status==='success'?'':'off'}">${e.status}</span></td></tr>`).join(''):'<tr><td colspan="6">Подій ще немає</td></tr>'})</script>  <script src="js/logout.js" defer></script>
 </body></html>
