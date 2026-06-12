@@ -95,6 +95,13 @@
       return { hasVerified: false };
     }
 
+    async function enrollTotp(supabase, name) {
+      return await supabase.auth.mfa.enroll({
+        factorType: 'totp',
+        friendlyName: name
+      });
+    }
+
     async function createFreshFactor(supabase, setStatus) {
       const cleanup = await removeOldUnverifiedTotp(supabase);
       if (cleanup.hasVerified) {
@@ -102,17 +109,28 @@
         return null;
       }
 
-      setStatus('');
-      const { data: enrollData, error: enrollError } = await supabase.auth.mfa.enroll({
-        factorType: 'totp',
-        friendlyName
-      });
+      setStatus('Генерую новий QR-код...');
+      let { data: enrollData, error: enrollError } = await enrollTotp(supabase, friendlyName);
+
+      // Supabase can keep an unfinished factor with the same friendlyName.
+      // If that happens, create a new setup factor with a unique friendlyName
+      // instead of leaving the user blocked.
+      if (enrollError && String(enrollError.message || '').toLowerCase().includes('already exists')) {
+        const uniqueName = `${friendlyName} ${Date.now()}`;
+        setStatus('Попередній QR-код не був завершений. Створюю новий...', 'warn');
+        const retry = await enrollTotp(supabase, uniqueName);
+        enrollData = retry.data;
+        enrollError = retry.error;
+      }
 
       if (enrollError) {
         setStatus(normalizeError(enrollError.message), 'error');
+        const box = document.getElementById('qrBox');
+        if (box) box.innerHTML = '<span class="qr-loading">QR-код не створено</span>';
         return null;
       }
 
+      setStatus('');
       return enrollData;
     }
 
