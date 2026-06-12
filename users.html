@@ -4,16 +4,17 @@
   <title>REBUS — Користувачі</title>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="icon" type="image/png" href="assets/favicon.png?v=20260612-users-v1" />
-  <link rel="shortcut icon" type="image/png" href="assets/favicon.png?v=20260612-users-v1" />
-  <link rel="apple-touch-icon" href="assets/favicon.png?v=20260612-users-v1" />
-  <link rel="stylesheet" href="css/styles.css?v=20260612-users-v1" />
+  <link rel="icon" type="image/png" href="assets/favicon.png?v=20260612-users-v2" />
+  <link rel="shortcut icon" type="image/png" href="assets/favicon.png?v=20260612-users-v2" />
+  <link rel="apple-touch-icon" href="assets/favicon.png?v=20260612-users-v2" />
+  <link rel="stylesheet" href="css/styles.css?v=20260612-users-v2" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/config.js"></script>
   <script src="js/auth.js" defer></script>
+  <script src="js/admin-users.js" defer></script>
 </head>
 <body>
-  <div class="app-shell users-page-shell">
+  <div class="app-shell">
     <aside class="sidebar">
       <div class="brand"><img src="assets/favicon.png" alt="REBUS"><h1>REBUS <span>Admin</span></h1></div>
       <nav class="nav">
@@ -27,313 +28,63 @@
       </div>
     </aside>
 
-    <main class="main users-main">
+    <main class="main users-page-main">
       <div class="topbar users-topbar">
         <h2>Користувачі</h2>
-        <div class="account-card" id="accountCard">
-          <div class="account-avatar" id="accountAvatar">A</div>
+        <div class="account-card">
+          <div class="account-avatar" id="currentAvatar">A</div>
           <div class="account-meta">
-            <div class="account-name" id="accountName">Адміністратор</div>
-            <div class="account-email" id="adminEmail"></div>
-            <div class="account-role">Адміністратор</div>
+            <strong id="currentName">Адміністратор</strong>
+            <span id="currentEmail">—</span>
+            <em id="currentRole">Адміністратор</em>
           </div>
         </div>
       </div>
 
-      <section class="users-toolbar panel">
-        <div class="search-wrap">
-          <span class="search-icon">⌕</span>
-          <input id="searchInput" class="search-input" type="search" placeholder="Пошук по email, маркеру або ролі..." autocomplete="off">
+      <section class="users-toolbar panel-flat">
+        <div class="search-box">
+          <span>⌕</span>
+          <input id="usersSearch" type="search" placeholder="Пошук по email, маркеру або ролі..." autocomplete="off">
         </div>
-
-        <div class="filter-row" id="filterRow">
-          <button class="filter-chip active" type="button" data-filter="all">Всі <span id="countAll">0</span></button>
-          <button class="filter-chip" type="button" data-filter="active">Активні <span id="countActive">0</span></button>
-          <button class="filter-chip" type="button" data-filter="inactive">Неактивні <span id="countInactive">0</span></button>
-          <button class="filter-chip" type="button" data-filter="deleted">Видалені <span id="countDeleted">0</span></button>
+        <div class="filter-row" aria-label="Фільтри статусу">
+          <button class="filter-chip active" type="button" data-filter="all">Всі <b class="filter-count">0</b></button>
+          <button class="filter-chip" type="button" data-filter="active">Активні <b class="filter-count">0</b></button>
+          <button class="filter-chip" type="button" data-filter="inactive">Неактивні <b class="filter-count">0</b></button>
+          <button class="filter-chip" type="button" data-filter="deleted">Видалені <b class="filter-count">0</b></button>
         </div>
       </section>
 
       <section class="panel users-table-panel">
+        <div id="usersWarning" class="inline-warning" hidden></div>
         <table class="table users-table">
           <thead>
             <tr>
-              <th><button class="sort-btn" data-sort="marker">Маркер <span>↕</span></button></th>
-              <th><button class="sort-btn" data-sort="email">Email <span>↕</span></button></th>
-              <th><button class="sort-btn" data-sort="role">Роль <span>↕</span></button></th>
-              <th><button class="sort-btn" data-sort="status">Статус <span>↕</span></button></th>
-              <th><button class="sort-btn" data-sort="last_login">Останній вхід <span>↕</span></button></th>
-              <th><button class="sort-btn" data-sort="created_at">Створений <span>↕</span></button></th>
-              <th class="actions-col">Дії</th>
+              <th><button type="button" class="sort-btn" data-sort="marker">Маркер ⇅</button></th>
+              <th><button type="button" class="sort-btn" data-sort="email">Email ⇅</button></th>
+              <th><button type="button" class="sort-btn" data-sort="role">Роль ⇅</button></th>
+              <th><button type="button" class="sort-btn" data-sort="status">Статус ⇅</button></th>
+              <th><button type="button" class="sort-btn" data-sort="last_login">Останній вхід ⇅</button></th>
+              <th><button type="button" class="sort-btn" data-sort="created_at">Створений ⇅</button></th>
+              <th>Дії</th>
             </tr>
           </thead>
           <tbody id="usersBody">
-            <tr><td colspan="7">Завантаження...</td></tr>
+            <tr><td colspan="7" class="table-empty">Завантаження...</td></tr>
           </tbody>
         </table>
         <div class="table-footer">
-          <div id="usersSummary">Показано: 0 користувачів</div>
-          <div class="pager"><button type="button" disabled>‹</button><button type="button" class="active">1</button><button type="button" disabled>›</button></div>
+          <div>
+            <span id="usersSummary">Показано: 0 користувачів</span>
+            <div id="usersStatus" class="status compact-status"></div>
+          </div>
+          <div id="usersPagination" class="pagination"></div>
         </div>
       </section>
-
-      <div id="status" class="status users-status"></div>
     </main>
   </div>
 
   <script>
-    const state = {
-      users: [],
-      filter: 'all',
-      search: '',
-      sortKey: 'created_at',
-      sortDir: 'desc',
-      busy: false
-    };
-
-    const escapeHtml = (value) => String(value ?? '')
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#039;');
-
-    const formatDate = (value) => {
-      if (!value) return '—';
-      const date = new Date(value);
-      if (Number.isNaN(date.getTime())) return '—';
-      return date.toLocaleString('uk-UA', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
-    };
-
-    const getStatus = (user) => {
-      const raw = String(user.status || '').toLowerCase();
-      if (raw === 'deleted' || raw === 'removed') return 'deleted';
-      if (raw === 'inactive' || raw === 'blocked' || raw === 'disabled') return 'inactive';
-      if (raw === 'active') return 'active';
-      return user.is_active === false ? 'inactive' : 'active';
-    };
-
-    const statusLabel = (status) => ({ active:'Активний', inactive:'Неактивний', deleted:'Видалений' }[status] || 'Активний');
-    const roleLabel = (role) => String(role || 'user').toLowerCase() === 'admin' ? 'Admin' : 'User';
-
-    function getFilteredUsers() {
-      const q = state.search.trim().toLowerCase();
-      let rows = [...state.users];
-
-      if (state.filter !== 'all') rows = rows.filter((user) => getStatus(user) === state.filter);
-      if (q) {
-        rows = rows.filter((user) => [user.marker, user.email, user.role, user.full_name]
-          .some((value) => String(value || '').toLowerCase().includes(q)));
-      }
-
-      rows.sort((a, b) => {
-        const key = state.sortKey;
-        const av = key === 'status' ? getStatus(a) : (a[key] ?? '');
-        const bv = key === 'status' ? getStatus(b) : (b[key] ?? '');
-        const result = String(av).localeCompare(String(bv), 'uk', { numeric: true, sensitivity: 'base' });
-        return state.sortDir === 'asc' ? result : -result;
-      });
-      return rows;
-    }
-
-    function updateCounts() {
-      const counts = state.users.reduce((acc, user) => {
-        acc.all += 1;
-        acc[getStatus(user)] += 1;
-        return acc;
-      }, { all:0, active:0, inactive:0, deleted:0 });
-
-      document.getElementById('countAll').textContent = counts.all;
-      document.getElementById('countActive').textContent = counts.active;
-      document.getElementById('countInactive').textContent = counts.inactive;
-      document.getElementById('countDeleted').textContent = counts.deleted;
-    }
-
-    function renderUsers() {
-      updateCounts();
-      const rows = getFilteredUsers();
-      const body = document.getElementById('usersBody');
-      const summary = document.getElementById('usersSummary');
-
-      if (!rows.length) {
-        body.innerHTML = '<tr><td colspan="7" class="empty-cell">Користувачів за цим фільтром немає</td></tr>';
-        summary.textContent = `Показано: 0 із ${state.users.length} користувачів`;
-        return;
-      }
-
-      body.innerHTML = rows.map((user) => {
-        const status = getStatus(user);
-        const role = roleLabel(user.role);
-        return `
-          <tr data-user-id="${escapeHtml(user.id || user.email)}">
-            <td class="marker-cell">${escapeHtml(user.marker || '—')}</td>
-            <td>${escapeHtml(user.email || '—')}</td>
-            <td><span class="role-badge ${role.toLowerCase()}">${role}</span></td>
-            <td><span class="status-badge ${status}"><span></span>${statusLabel(status)}</span></td>
-            <td>${formatDate(user.last_login || user.last_sign_in_at)}</td>
-            <td>${formatDate(user.created_at)}</td>
-            <td class="actions-col">
-              <button class="row-menu-btn" type="button" data-email="${escapeHtml(user.email || '')}" title="Дії">⋮</button>
-            </td>
-          </tr>`;
-      }).join('');
-
-      summary.textContent = `Показано: ${rows.length} із ${state.users.length} користувачів`;
-    }
-
-    function closeMenus() {
-      document.querySelectorAll('.row-action-menu').forEach((menu) => menu.remove());
-    }
-
-    function getUserByEmail(email) {
-      return state.users.find((user) => String(user.email || '') === String(email || ''));
-    }
-
-    function openMenu(button) {
-      closeMenus();
-      const email = button.dataset.email;
-      const user = getUserByEmail(email);
-      if (!user) return;
-      const rect = button.getBoundingClientRect();
-      const menu = document.createElement('div');
-      menu.className = 'row-action-menu';
-      menu.innerHTML = `
-        <button type="button" data-action="active" data-email="${escapeHtml(email)}">🟢 Активувати</button>
-        <button type="button" data-action="inactive" data-email="${escapeHtml(email)}">🟡 Деактивувати</button>
-        <button type="button" data-action="admin" data-email="${escapeHtml(email)}">👑 Зробити адміністратором</button>
-        <button type="button" data-action="user" data-email="${escapeHtml(email)}">👤 Зробити користувачем</button>
-        <button type="button" class="danger" data-action="deleted" data-email="${escapeHtml(email)}">🗑️ Видалити</button>
-      `;
-      document.body.appendChild(menu);
-      const menuWidth = 250;
-      menu.style.left = `${Math.max(12, rect.right - menuWidth)}px`;
-      menu.style.top = `${rect.bottom + 8}px`;
-    }
-
-    async function updateUser(email, patch) {
-      const { supabase, setStatus } = window.rebusAuth;
-      if (state.busy) return;
-      state.busy = true;
-      setStatus('Оновлюю користувача...');
-
-      const user = getUserByEmail(email);
-      if (!user) { state.busy = false; return; }
-
-      let updatePatch = { ...patch };
-      const status = patch.status;
-      if (status === 'active') updatePatch = { status: 'active', is_active: true };
-      if (status === 'inactive') updatePatch = { status: 'inactive', is_active: false };
-      if (status === 'deleted') updatePatch = { status: 'deleted', is_active: false };
-
-      let { error } = await supabase.from('rebus_profiles').update(updatePatch).eq('email', email);
-
-      // Якщо в таблиці ще немає колонки status — fallback на is_active.
-      if (error && 'status' in updatePatch) {
-        const fallbackPatch = { ...updatePatch };
-        delete fallbackPatch.status;
-        const fallback = await supabase.from('rebus_profiles').update(fallbackPatch).eq('email', email);
-        error = fallback.error;
-      }
-
-      if (error) {
-        setStatus(error.message || 'Не вдалося оновити користувача.', 'error');
-        state.busy = false;
-        return;
-      }
-
-      Object.assign(user, updatePatch);
-
-      if (patch.role === 'admin') {
-        await supabase.from('rebus_admin_access').upsert({ email, marker: user.marker || null, role: 'admin', is_active: true, mfa_required: true }, { onConflict: 'email' });
-      }
-      if (patch.role === 'user') {
-        await supabase.from('rebus_admin_access').update({ is_active: false }).eq('email', email);
-      }
-
-      closeMenus();
-      renderUsers();
-      setStatus('Користувача оновлено.', 'ok');
-      state.busy = false;
-    }
-
-    async function loadUsers() {
-      const { supabase, setStatus } = window.rebusAuth;
-      setStatus('Завантажую користувачів...');
-      const { data, error } = await supabase.from('rebus_profiles').select('*').order('created_at', { ascending: false });
-      if (error) {
-        document.getElementById('usersBody').innerHTML = `<tr><td colspan="7" class="empty-cell">Помилка завантаження: ${escapeHtml(error.message)}</td></tr>`;
-        setStatus('Помилка завантаження користувачів.', 'error');
-        return;
-      }
-      state.users = data || [];
-      renderUsers();
-      setStatus('');
-    }
-
-    function setupAccount(user, admin) {
-      const meta = user.user_metadata || {};
-      const avatarUrl = meta.avatar_url || meta.picture;
-      const name = meta.full_name || meta.name || admin?.full_name || 'Адміністратор';
-      const email = user.email || '';
-
-      document.getElementById('adminEmail').textContent = email;
-      document.getElementById('accountName').textContent = name;
-
-      const avatar = document.getElementById('accountAvatar');
-      if (avatarUrl) {
-        avatar.innerHTML = `<img src="${escapeHtml(avatarUrl)}" alt="Аватар">`;
-      } else {
-        avatar.textContent = (name || email || 'A').trim().charAt(0).toUpperCase();
-      }
-    }
-
-    window.addEventListener('DOMContentLoaded', async () => {
-      const { requireAdmin, getAal } = window.rebusAuth;
-      const ctx = await requireAdmin(); if (!ctx) return;
-      if (await getAal() !== 'aal2') { location.href = 'verify-2fa.html'; return; }
-
-      setupAccount(ctx.session.user, ctx.admin);
-      await loadUsers();
-
-      document.getElementById('searchInput').addEventListener('input', (event) => {
-        state.search = event.target.value;
-        renderUsers();
-      });
-
-      document.getElementById('filterRow').addEventListener('click', (event) => {
-        const btn = event.target.closest('[data-filter]');
-        if (!btn) return;
-        state.filter = btn.dataset.filter;
-        document.querySelectorAll('.filter-chip').forEach((chip) => chip.classList.toggle('active', chip === btn));
-        renderUsers();
-      });
-
-      document.querySelectorAll('.sort-btn').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          const key = btn.dataset.sort;
-          if (state.sortKey === key) state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
-          else { state.sortKey = key; state.sortDir = 'asc'; }
-          renderUsers();
-        });
-      });
-
-      document.addEventListener('click', async (event) => {
-        const menuBtn = event.target.closest('.row-menu-btn');
-        if (menuBtn) { openMenu(menuBtn); return; }
-
-        const actionBtn = event.target.closest('.row-action-menu [data-action]');
-        if (actionBtn) {
-          const action = actionBtn.dataset.action;
-          const email = actionBtn.dataset.email;
-          if (action === 'active' || action === 'inactive' || action === 'deleted') await updateUser(email, { status: action });
-          if (action === 'admin') await updateUser(email, { role: 'admin' });
-          if (action === 'user') await updateUser(email, { role: 'user' });
-          return;
-        }
-
-        if (!event.target.closest('.row-action-menu')) closeMenus();
-      });
-    });
+    window.addEventListener('DOMContentLoaded', () => window.initUsersPage && window.initUsersPage());
   </script>
   <script src="js/logout.js" defer></script>
 </body>
