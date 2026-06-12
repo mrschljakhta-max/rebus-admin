@@ -108,5 +108,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     setStatus('Доступ заборонено. Email не додано до REBUS Admin.', 'error');
   }
 
-  await routeAfterLogin();
+  // Важливо: автопереадресацію після входу запускаємо тільки на стартовій сторінці.
+  // На verify-2fa.html/setup-2fa.html/внутрішніх сторінках своя логіка перевірки.
+  // Раніше auth.js запускав routeAfterLogin() всюди, через що verify-2fa.html
+  // сам себе перезавантажував і зависав на «Перевіряю доступ адміністратора...».
+  const page = (window.location.pathname.split('/').pop() || 'index.html').toLowerCase();
+  const isLoginPage = page === 'index.html' || page === '';
+  if (isLoginPage) {
+    await routeAfterLogin();
+  }
 });
