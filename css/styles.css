@@ -484,3 +484,50 @@ body.verify-2fa-page .auth-card {
 
 /* === REBUS access/logs functional v2 === */
 .form-card-body.compact{padding-bottom:10px}.access-filters{margin-top:16px}.request-card .status-badge{white-space:nowrap}.events-tools{margin-bottom:20px}.tag{display:inline-flex;align-items:center;border-radius:999px;padding:5px 10px;font-size:12px;font-weight:900;background:rgba(40,190,100,.16);color:#70f0a8;border:1px solid rgba(70,220,140,.18)}.tag.off{background:rgba(210,45,75,.14);color:#ff7c91;border-color:rgba(255,90,120,.22)}
+
+/* Access page mode switch */
+.access-mode-switch{
+  display:inline-flex;
+  gap:8px;
+  padding:6px;
+  margin:0 0 18px;
+  border:1px solid var(--line);
+  border-radius:18px;
+  background:rgba(255,255,255,.035);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+}
+.mode-tab{
+  min-height:46px;
+  padding:0 22px;
+  border:1px solid transparent;
+  border-radius:14px;
+  background:transparent;
+  color:var(--muted);
+  font-weight:900;
+  font-size:15px;
+  cursor:pointer;
+  transition:background .18s ease,border-color .18s ease,color .18s ease,box-shadow .18s ease;
+}
+.mode-tab:hover{
+  color:#fff;
+  background:rgba(255,255,255,.055);
+}
+.mode-tab.active{
+  color:#fff;
+  border-color:rgba(192,52,80,.55);
+  background:linear-gradient(135deg,rgba(157,24,52,.52),rgba(109,0,26,.32));
+  box-shadow:0 12px 30px rgba(157,24,52,.16);
+}
+.access-mode-panel{
+  margin-top:0;
+}
+.access-mode-panel + .access-mode-panel{
+  margin-top:0;
+}
+.is-hidden{
+  display:none !important;
+}
+@media(max-width:700px){
+  .access-mode-switch{width:100%;display:grid;grid-template-columns:1fr 1fr}
+  .mode-tab{padding:0 10px;font-size:14px}
+}

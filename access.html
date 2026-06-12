@@ -23,7 +23,12 @@
     <main class="main">
       <div class="topbar"><h2>Надати доступ</h2><div class="user-pill" id="adminEmail"></div></div>
 
-      <section class="panel">
+      <div class="access-mode-switch" role="tablist" aria-label="Режим сторінки надання доступу">
+        <button id="modeRequests" class="mode-tab active" type="button" data-access-mode="requests" aria-selected="true">Запити на доступ</button>
+        <button id="modeManual" class="mode-tab" type="button" data-access-mode="manual" aria-selected="false">Ручне надання</button>
+      </div>
+
+      <section id="requestsPanel" class="panel access-mode-panel">
         <div class="panel-header">
           <h3>Запити на доступ</h3>
           <button id="reloadRequests" class="small-btn">Оновити</button>
@@ -43,7 +48,7 @@
         <div class="form-card-body"><div id="requestsList" class="requests-grid"><div class="muted">Завантаження...</div></div></div>
       </section>
 
-      <section class="panel">
+      <section id="manualPanel" class="panel access-mode-panel is-hidden">
         <div class="panel-header"><h3>Ручне надання доступу</h3></div>
         <div class="form-card-body">
           <div class="form-grid">
@@ -77,6 +82,23 @@
       const A = window.rebusAdmin;
       const ctx = await A.getAdminContext(); if(!ctx)return;
       A.renderAdminProfile(document.getElementById('adminEmail'), ctx.session, ctx.admin);
+
+
+      const accessModeButtons = document.querySelectorAll('[data-access-mode]');
+      const requestsPanel = document.getElementById('requestsPanel');
+      const manualPanel = document.getElementById('manualPanel');
+      function setAccessMode(mode){
+        const isManual = mode === 'manual';
+        requestsPanel.classList.toggle('is-hidden', isManual);
+        manualPanel.classList.toggle('is-hidden', !isManual);
+        accessModeButtons.forEach(btn => {
+          const active = btn.dataset.accessMode === mode;
+          btn.classList.toggle('active', active);
+          btn.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+      }
+      accessModeButtons.forEach(btn => btn.addEventListener('click', () => setAccessMode(btn.dataset.accessMode)));
+      setAccessMode('requests');
 
       const requestsList = document.getElementById('requestsList');
       const requestsNotice = document.getElementById('requestsNotice');
