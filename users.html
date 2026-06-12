@@ -159,8 +159,10 @@
           <div class="action-menu" id="menu-${CSS.escape(String(u.id))}">
             <button data-action="status" data-value="active" data-id="${A.esc(u.id)}">● Активувати</button>
             <button data-action="status" data-value="inactive" data-id="${A.esc(u.id)}">● Деактивувати</button>
-            <button data-action="role" data-value="admin" data-id="${A.esc(u.id)}">👑 Зробити адміністратором</button>
             <button data-action="role" data-value="user" data-id="${A.esc(u.id)}">👤 Зробити користувачем</button>
+            <button data-action="role" data-value="operator" data-id="${A.esc(u.id)}">🛡️ Зробити оператором</button>
+            <button data-action="role" data-value="admin" data-id="${A.esc(u.id)}">👑 Зробити адміністратором</button>
+            <button data-action="role" data-value="super_admin" data-id="${A.esc(u.id)}">◆ Зробити суперадміністратором</button>
             <button class="danger" data-action="status" data-value="deleted" data-id="${A.esc(u.id)}">🗑️ Видалити</button>
           </div>
         </div>`;
@@ -179,12 +181,28 @@
           const { error } = await supabase.from('rebus_profiles').update(dbPatch).eq('email', byEmail);
           if (!error) ok = true; else lastError = error;
         }
-        const adminPatch = {...dbPatch};
-        if (patch.status) adminPatch.is_active = patch.status === 'active';
-        const adminUpdate = await supabase.from('rebus_admin_access').update(adminPatch).eq('email', byEmail);
-        if (!adminUpdate.error) ok = true; else lastError = adminUpdate.error;
+        const nextRole = patch.role ? A.normalizeRole(patch.role) : A.normalizeRole(u.role);
+        const isAdminRole = nextRole === 'admin' || nextRole === 'super_admin';
+        if (isAdminRole) {
+          const adminPatch = {
+            email: byEmail,
+            marker: u.marker,
+            role: nextRole,
+            is_active: patch.status ? patch.status === 'active' : u.status !== 'inactive' && u.status !== 'deleted',
+            mfa_required: true,
+            updated_at: new Date().toISOString()
+          };
+          const adminUpdate = await supabase.from('rebus_admin_access').upsert(adminPatch, { onConflict:'email' });
+          if (!adminUpdate.error) ok = true; else lastError = adminUpdate.error;
+        } else {
+          // operator/user: доступ до адмінки вимикаємо, але профіль у rebus_profiles лишається активним для розширення.
+          const adminUpdate = await supabase.from('rebus_admin_access')
+            .update({ role: nextRole, is_active:false, updated_at:new Date().toISOString() })
+            .eq('email', byEmail);
+          if (!adminUpdate.error) ok = true;
+        }
         if (!ok) { setNotice(lastError?.message || 'Не вдалося оновити користувача.', 'error'); return; }
-        await A.logEvent(supabase, { marker:u.marker, email:u.email, action: patch.role ? `Змінено роль: ${patch.role}` : `Змінено статус: ${patch.status}`, status:'success' });
+        await A.logEvent(supabase, { marker:u.marker, email:u.email, action: patch.role ? `Змінено роль: ${A.roleLabel(patch.role)}` : `Змінено статус: ${patch.status}`, status:'success' });
         if (patch.role) u.role = patch.role;
         if (patch.status) u.status = patch.status;
         setNotice('Зміни збережено.', 'ok');

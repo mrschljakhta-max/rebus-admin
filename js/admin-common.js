@@ -1,11 +1,12 @@
 (function(){
   const cfg = window.REBUS_CONFIG || {};
   const STATUS_LABELS = { active:'Активний', inactive:'Неактивний', deleted:'Видалений' };
-  const ROLE_LABELS = { user:'Користувач', admin:'Адміністратор', super_admin:'Суперадміністратор', 'super-admin':'Суперадміністратор' };
+  const ROLE_LABELS = { user:'Користувач', operator:'Оператор', admin:'Адміністратор', super_admin:'Суперадміністратор', superadmin:'Суперадміністратор', 'super-admin':'Суперадміністратор' };
   function normalizeRole(v){
     const s = String(v || 'user').toLowerCase().replace(/-/g,'_');
     if (s.includes('super')) return 'super_admin';
     if (s === 'admin' || s === 'administrator') return 'admin';
+    if (s === 'operator' || s === 'оператор') return 'operator';
     return 'user';
   }
   function roleLabel(v){ return ROLE_LABELS[normalizeRole(v)] || 'Користувач'; }

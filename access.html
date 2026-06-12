@@ -55,7 +55,7 @@
             <div class="field"><label>Email</label><input id="email" placeholder="user@gmail.com"></div>
             <div class="field"><label>Маркер</label><input id="marker" placeholder="RREB-01"></div>
             <div class="field"><label>Ім'я</label><input id="fullName" placeholder="необов'язково"></div>
-            <div class="field"><label>Роль</label><select id="role"><option value="user">Користувач</option><option value="admin">Адміністратор</option></select></div>
+            <div class="field"><label>Роль</label><select id="role"><option value="user">Користувач</option><option value="operator">Оператор</option><option value="admin">Адміністратор</option><option value="super_admin">Суперадміністратор</option></select></div>
           </div>
           <div class="actions"><button id="createBtn" class="btn">Надати доступ</button></div>
           <div id="status" class="status"></div>
@@ -70,7 +70,7 @@
       <p id="modalEmail" class="muted"></p>
       <div class="form-grid">
         <div class="field"><label>Маркер</label><input id="modalMarker" placeholder="RREB-01"></div>
-        <div class="field"><label>Роль</label><select id="modalRole"><option value="user">Користувач</option><option value="admin">Адміністратор</option></select></div>
+        <div class="field"><label>Роль</label><select id="modalRole"><option value="user">Користувач</option><option value="operator">Оператор</option><option value="admin">Адміністратор</option><option value="super_admin">Суперадміністратор</option></select></div>
       </div>
       <div class="modal-actions"><button id="cancelApprove" class="small-btn">Скасувати</button><button id="confirmApprove" class="small-btn primary">Схвалити</button></div>
     </div>
@@ -163,9 +163,23 @@
         const prof = await supabase.from('rebus_profiles').upsert(profilePayload, { onConflict:'email' });
         if(!prof.error) ok = true; else lastError = prof.error;
 
-        const adminPayload = { email:base.email, marker:base.marker, role:base.role, is_active:true, mfa_required:true, created_at:now, updated_at:now };
-        const admin = await supabase.from('rebus_admin_access').upsert(adminPayload, { onConflict:'email' });
-        if(!admin.error) ok = true; else lastError = admin.error;
+        const normalizedRole = A.normalizeRole(base.role);
+        const isAdminRole = normalizedRole === 'admin' || normalizedRole === 'super_admin';
+
+        if (isAdminRole) {
+          const adminPayload = { email:base.email, marker:base.marker, role:normalizedRole, is_active:true, mfa_required:true, created_at:now, updated_at:now };
+          const admin = await supabase.from('rebus_admin_access').upsert(adminPayload, { onConflict:'email' });
+          if(!admin.error) ok = true; else lastError = admin.error;
+        } else {
+          // Користувач і оператор не повинні мати доступ до адмін-сайту.
+          // Якщо раніше цей email був у rebus_admin_access — деактивуємо його там.
+          try {
+            await supabase.from('rebus_admin_access')
+              .update({ is_active:false, role:normalizedRole, updated_at:now })
+              .eq('email', base.email);
+          } catch(_) {}
+        }
+
         if(!ok) throw lastError || new Error('Не вдалося створити доступ.');
         await A.logEvent(supabase, { marker:base.marker, email:base.email, action:`Надано доступ (${A.roleLabel(base.role)})`, status:'success' });
         // Якщо для цього email була заявка — автоматично позначаємо її як схвалену.
