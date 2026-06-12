@@ -1,1 +1,25 @@
-<!doctype html><html lang="uk"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>REBUS — Користувачі</title><link rel="stylesheet" href="css/styles.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="js/config.js"></script><script src="js/auth.js" defer></script></head><body><div class="app-shell"><aside class="sidebar"><div class="brand"><img src="assets/key.png"><h1>REBUS <span>Admin</span></h1></div><nav class="nav"><a href="dashboard.html">Головна</a><a class="active" href="users.html">Користувачі</a><a href="access.html">Надати доступ</a><a href="events.html">Журнал</a><a href="settings.html">Налаштування</a></nav></aside><main class="main"><div class="topbar"><h2>Користувачі</h2><div class="user-pill" id="adminEmail"></div></div><section class="panel"><div class="panel-header"><h3>Список доступів</h3></div><table class="table"><thead><tr><th>Маркер</th><th>Email</th><th>Роль</th><th>Статус</th></tr></thead><tbody id="body"><tr><td colspan="4">Завантаження...</td></tr></tbody></table></section></main></div><script>window.addEventListener('DOMContentLoaded', async()=>{const{supabase,requireAdmin,getAal}=window.rebusAuth;const ctx=await requireAdmin();if(!ctx)return;if(await getAal()!=='aal2'){location.href='verify-2fa.html';return}adminEmail.textContent=ctx.session.user.email;const{data}=await supabase.from('rebus_profiles').select('*').order('created_at',{ascending:false});body.innerHTML=(data&&data.length)?data.map(u=>`<tr><td>${u.marker}</td><td>${u.email}</td><td>${u.role}</td><td><span class="tag ${u.is_active?'':'off'}">${u.is_active?'active':'blocked'}</span></td></tr>`).join(''):'<tr><td colspan="4">Користувачів ще немає</td></tr>'})</script></body></html>
+# REBUS Admin Portal v0.1
+
+Статичний сайт для GitHub Pages + Supabase.
+
+## Що є
+
+- `index.html` — вхід через Google.
+- `setup-2fa.html` — перше налаштування TOTP/QR.
+- `verify-2fa.html` — введення 2FA-коду при наступних входах.
+- `dashboard.html` — перша панель керування.
+- `users.html` — список користувачів.
+- `access.html` — надати доступ користувачу/адміну.
+- `events.html` — журнал подій.
+- `settings.html` — вихід із сесії.
+
+## Перед запуском
+
+1. У Supabase → SQL Editor виконай `sql/rebus_admin_setup.sql`.
+2. У `js/config.js` встав `SUPABASE_ANON_KEY`.
+3. У Supabase Auth увімкни Google provider.
+4. У Supabase Auth URL Configuration додай GitHub Pages URL у Redirect URLs.
+
+## Важливо
+
+`service_role key` ніколи не вставляти в сайт або розширення.

@@ -3,221 +3,45 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>REBUS Admin — 2FA</title>
+  <title>REBUS Admin — Вхід</title>
   <link rel="stylesheet" href="css/styles.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <script src="js/config.js"></script>
   <script src="js/auth.js" defer></script>
 </head>
-<body class="bg-page bg-2fa setup-page">
-  <main class="auth-card setup-card compact-2fa-card">
-    <div class="brand setup-brand">
-      <img src="assets/key.png" alt="REBUS" />
-      <h1>REBUS <span>2FA</span></h1>
-    </div>
-
-    <div id="qrBox" class="qr-box qr-box-large">
-      <span class="qr-loading">Генерую QR...</span>
-    </div>
-
-    <input
-      id="codeInput"
-      class="input code-input"
-      inputmode="numeric"
-      autocomplete="one-time-code"
-      maxlength="6"
-      placeholder="000000"
-    />
-
-    <div class="stack compact-actions">
-      <button id="verifyBtn" class="btn">Активувати захист</button>
-      <button id="logoutBtn" class="btn secondary">Скасувати</button>
-    </div>
-
-    <div id="status" class="status setup-status"></div>
+<body class="bg-page login-page entry-login-page">
+  <main class="entry-page">
+    <section class="entry-minimal" aria-label="REBUS entry">
+      <div class="entry-title">REBUS</div>
+      <button id="googleLoginBtn" class="entry-login" type="button">ВХІД</button>
+      <div id="authStatus" class="entry-status" aria-live="polite"></div>
+    </section>
   </main>
 
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+<script src="js/config.js"></script>
+  
+<script src="js/auth.js" defer></script>
+
+
   <script>
-    let factorId = null;
-    let challengeId = null;
-
-    const friendlyName = 'REBUS Admin';
-
-    function normalizeError(message) {
-      const text = String(message || '').toLowerCase();
-      if (text.includes('already exists')) {
-        return 'Попередній QR-код вже був створений. Оновлюю налаштування...';
-      }
-      if (text.includes('invalid') || text.includes('verify')) {
-        return 'Код неправильний або застарів.';
-      }
-      return message || 'Сталася помилка.';
-    }
-
-    function renderQr(qr, uri) {
-      const box = document.getElementById('qrBox');
-      if (!box) return;
-
-      const q = String(qr || '').trim();
-      const u = String(uri || '').trim();
-      box.innerHTML = '';
-
-      // Supabase sometimes returns an inline SVG, and sometimes a data URI
-      // that contains an SVG. Rendering it as <img> may break on GitHub Pages,
-      // so we render SVG inline when possible.
-      const svgIndex = q.indexOf('<svg');
-      if (q.startsWith('<svg') || svgIndex >= 0) {
-        let svg = svgIndex >= 0 ? q.slice(svgIndex) : q;
-        try { svg = decodeURIComponent(svg); } catch (_) {}
-        box.innerHTML = svg;
-        const svgEl = box.querySelector('svg');
-        if (svgEl) {
-          svgEl.setAttribute('aria-label', 'QR code');
-          svgEl.removeAttribute('width');
-          svgEl.removeAttribute('height');
-          svgEl.setAttribute('viewBox', svgEl.getAttribute('viewBox') || '0 0 256 256');
-        }
-        return;
-      }
-
-      if (q.startsWith('data:image') || q.startsWith('http')) {
-        const img = document.createElement('img');
-        img.alt = 'QR code';
-        img.src = q;
-        img.style.width = '100%';
-        img.style.height = '100%';
-        img.style.objectFit = 'contain';
-        img.onerror = () => {
-          if (window.QRCode && (u || q.startsWith('otpauth://'))) renderQrWithLibrary(u || q, box);
-          else box.innerHTML = '<span class="qr-loading">QR-код не вдалося показати</span>';
-        };
-        box.appendChild(img);
-        return;
-      }
-
-      if (window.QRCode && (u || q.startsWith('otpauth://'))) {
-        renderQrWithLibrary(u || q, box);
-        return;
-      }
-
-      box.innerHTML = '<span class="qr-loading">QR-код не отримано</span>';
-    }
-
-    function renderQrWithLibrary(value, box) {
-      box.innerHTML = '';
-      const canvas = document.createElement('canvas');
-      box.appendChild(canvas);
-      window.QRCode.toCanvas(canvas, value, {
-        width: 236,
-        margin: 1,
-        color: { dark: '#000000', light: '#ffffff' }
-      }, (err) => {
-        if (err) {
-          box.innerHTML = '<span class="qr-loading">QR-код не вдалося створити</span>';
-          return;
-        }
-        canvas.style.width = '100%';
-        canvas.style.height = '100%';
-        canvas.style.objectFit = 'contain';
-      });
-    }
-
-    async function removeOldUnverifiedTotp(supabase) {
-      const { data } = await supabase.auth.mfa.listFactors();
-      const factors = data?.totp || [];
-      const verified = factors.filter((f) => f.status === 'verified');
-      if (verified.length) return { hasVerified: true };
-
-      const old = factors.filter((f) => f.status !== 'verified');
-      for (const factor of old) {
-        try {
-          await supabase.auth.mfa.unenroll({ factorId: factor.id });
-        } catch (_) {}
-      }
-      return { hasVerified: false };
-    }
-
-    async function enrollTotp(supabase, name) {
-      return await supabase.auth.mfa.enroll({
-        factorType: 'totp',
-        friendlyName: name
-      });
-    }
-
-    async function createFreshFactor(supabase, setStatus) {
-      const cleanup = await removeOldUnverifiedTotp(supabase);
-      if (cleanup.hasVerified) {
-        location.href = 'verify-2fa.html';
-        return null;
-      }
-
-      setStatus('Генерую новий QR-код...');
-      let { data: enrollData, error: enrollError } = await enrollTotp(supabase, friendlyName);
-
-      // Supabase can keep an unfinished factor with the same friendlyName.
-      // If that happens, create a new setup factor with a unique friendlyName
-      // instead of leaving the user blocked.
-      if (enrollError && String(enrollError.message || '').toLowerCase().includes('already exists')) {
-        const uniqueName = `${friendlyName} ${Date.now()}`;
-        setStatus('Попередній QR-код не був завершений. Створюю новий...', 'warn');
-        const retry = await enrollTotp(supabase, uniqueName);
-        enrollData = retry.data;
-        enrollError = retry.error;
-      }
-
-      if (enrollError) {
-        setStatus(normalizeError(enrollError.message), 'error');
-        const box = document.getElementById('qrBox');
-        if (box) box.innerHTML = '<span class="qr-loading">QR-код не створено</span>';
-        return null;
-      }
-
-      setStatus('');
-      return enrollData;
-    }
-
     window.addEventListener('DOMContentLoaded', async () => {
-      const { supabase, requireAdmin, setStatus } = window.rebusAuth;
-      const ctx = await requireAdmin();
-      if (!ctx) return;
-
-      const enrollData = await createFreshFactor(supabase, setStatus);
-      if (!enrollData) return;
-
-      factorId = enrollData.id;
-      renderQr(enrollData.totp?.qr_code, enrollData.totp?.uri);
-
-      const { data: chData, error: chError } = await supabase.auth.mfa.challenge({ factorId });
-      if (chError) {
-        setStatus(normalizeError(chError.message), 'error');
-        return;
-      }
-      challengeId = chData.id;
-
-      document.getElementById('verifyBtn').addEventListener('click', async () => {
-        const code = document.getElementById('codeInput').value.trim();
-        if (!/^\d{6}$/.test(code)) {
-          setStatus('Введіть 6 цифр.', 'error');
-          return;
-        }
-
-        setStatus('Перевіряю код...');
-        const { error } = await supabase.auth.mfa.verify({ factorId, challengeId, code });
-        if (error) {
-          setStatus(normalizeError(error.message), 'error');
-          return;
-        }
-
-        setStatus('Захист активовано.', 'ok');
-        setTimeout(() => location.href = 'dashboard.html', 650);
+      const { supabase, setStatus, routeAfterLogin } = window.rebusAuth;
+      const params = new URLSearchParams(location.search);
+      if (params.get('error') === 'access_denied') setStatus('Доступ заборонено.', 'error');
+      const { data } = await supabase.auth.getSession();
+      if (data.session) await routeAfterLogin();
+      document.getElementById('googleBtn').addEventListener('click', async () => {
+        setStatus('Переадресовую на Google...');
+        const redirectTo = location.origin + location.pathname.replace('index.html','') + 'index.html';
+        const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo } });
+        if (error) setStatus(error.message, 'error');
       });
-
-      document.getElementById('logoutBtn').addEventListener('click', async () => {
-        await supabase.auth.signOut();
-        location.href = 'index.html';
-      });
+      supabase.auth.onAuthStateChange((_event, session) => { if (session) routeAfterLogin(); });
     });
   </script>
+
 </body>
 </html>
