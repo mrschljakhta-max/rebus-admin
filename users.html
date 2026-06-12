@@ -1,14 +1,54 @@
-<!doctype html><html lang="uk"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>REBUS — Користувачі</title>
-
-
-
-
-  <link rel="icon" type="image/png" sizes="512x512" href="assets/favicon.png?v=20260612-nq-white-2" />
-  <link rel="shortcut icon" type="image/png" href="assets/favicon.png?v=20260612-nq-white-2" />
-  <link rel="apple-touch-icon" href="assets/favicon.png?v=20260612-nq-white-2" />
-<div class="sidebar-footer">
-        <button id="logoutBtn" class="logout-btn" type="button">Вийти</button>
-      </div>
-
-    </aside><main class="main"><div class="topbar"><h2>Користувачі</h2><div class="user-pill" id="adminEmail"></div></div><section class="panel"><div class="panel-header"><h3>Список доступів</h3></div><table class="table"><thead><tr><th>Маркер</th><th>Email</th><th>Роль</th><th>Статус</th></tr></thead><tbody id="body"><tr><td colspan="4">Завантаження...</td></tr></tbody></table></section></main></div><script>window.addEventListener('DOMContentLoaded', async()=>{const{supabase,requireAdmin,getAal}=window.rebusAuth;const ctx=await requireAdmin();if(!ctx)return;if(await getAal()!=='aal2'){location.href='verify-2fa.html';return}adminEmail.textContent=ctx.session.user.email;const{data}=await supabase.from('rebus_profiles').select('*').order('created_at',{ascending:false});body.innerHTML=(data&&data.length)?data.map(u=>`<tr><td>${u.marker}</td><td>${u.email}</td><td>${u.role}</td><td><span class="tag ${u.is_active?'':'off'}">${u.is_active?'active':'blocked'}</span></td></tr>`).join(''):'<tr><td colspan="4">Користувачів ще немає</td></tr>'})</script>  <script src="js/logout.js" defer></script>
-</body></html>
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>REBUS Admin — Користувачі</title>
+  <link rel="icon" type="image/png" sizes="512x512" href="assets/favicon.png?v=20260612-nq-pages-v1" />
+  <link rel="shortcut icon" type="image/png" href="assets/favicon.png?v=20260612-nq-pages-v1" />
+  <link rel="apple-touch-icon" href="assets/favicon.png?v=20260612-nq-pages-v1" />
+  <link rel="stylesheet" href="css/styles.css?v=20260612-nq-pages-v1" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/auth.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand admin-brand"><img class="brand-logo" src="assets/favicon.png?v=20260612-nq-pages-v1" alt="REBUS"><h1>REBUS <span>Admin</span></h1></div>
+    <nav class="nav">
+      <a class="" href="dashboard.html">Головна</a>
+      <a class="active" href="users.html">Користувачі</a>
+      <a class="" href="access.html">Надати доступ</a>
+      <a class="" href="events.html">Журнал</a>
+      <a class="" href="settings.html">Налаштування</a>
+    </nav>
+    <div class="sidebar-footer">
+      <button id="logoutBtn" class="logout-btn" type="button">Вийти</button>
+    </div>
+  </aside>
+    <main class="main">
+      <div class="topbar"><h2>Користувачі</h2><div class="user-pill" id="adminEmail"></div></div>
+      <section class="panel">
+        <div class="panel-header"><h3>Список доступів</h3></div>
+        <table class="table"><thead><tr><th>Маркер</th><th>Email</th><th>Ім’я</th><th>Роль</th><th>Статус</th></tr></thead><tbody id="usersBody"><tr><td colspan="5">Завантаження...</td></tr></tbody></table>
+      </section>
+    </main>
+  </div>
+  <script>
+    window.addEventListener('DOMContentLoaded', async () => {
+      const { supabase, requireAdmin, getAal } = window.rebusAuth;
+      const ctx = await requireAdmin(); if (!ctx) return;
+      if (await getAal() !== 'aal2') { location.href = 'verify-2fa.html'; return; }
+      document.getElementById('adminEmail').textContent = ctx.session.user.email;
+      const body = document.getElementById('usersBody');
+      const { data, error } = await supabase.from('rebus_profiles').select('*').order('created_at', { ascending:false });
+      if (error) { body.innerHTML = `<tr><td colspan="5">${error.message}</td></tr>`; return; }
+      body.innerHTML = (data && data.length)
+        ? data.map(u => `<tr><td>${u.marker || '—'}</td><td>${u.email || '—'}</td><td>${u.full_name || '—'}</td><td>${u.role || 'user'}</td><td><span class="tag ${u.is_active ? '' : 'off'}">${u.is_active ? 'active' : 'blocked'}</span></td></tr>`).join('')
+        : '<tr><td colspan="5">Користувачів ще немає</td></tr>';
+    });
+  </script>
+  <script src="js/logout.js" defer></script>
+</body>
+</html>
