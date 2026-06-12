@@ -4,36 +4,45 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>REBUS Admin — 2FA</title>
-  <link rel="icon" type="image/png" sizes="192x192" href="./favicon.png?v=20260612-red-r" />
-  <link rel="icon" type="image/x-icon" href="./favicon.ico?v=20260612-red-r" />
-  <link rel="shortcut icon" type="image/x-icon" href="./favicon.ico?v=20260612-red-r" />
-  <link rel="apple-touch-icon" href="./favicon.png?v=20260612-red-r" />
-  <link rel="stylesheet" href="css/styles.css?v=20260612-red-2fa" />
+
+
+
+
+  <link rel="icon" type="image/png" sizes="512x512" href="assets/favicon.png?v=20260612-nq-white-2" />
+  <link rel="shortcut icon" type="image/png" href="assets/favicon.png?v=20260612-nq-white-2" />
+  <link rel="apple-touch-icon" href="assets/favicon.png?v=20260612-nq-white-2" />
+<link rel="stylesheet" href="css/styles.css?v=20260612-red-2fa" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/config.js"></script>
   <script src="js/auth.js" defer></script>
 
   <style>
     body.verify-2fa-page {
-      background-image: url('./assets/bg-2fa.png?v=20260612-red-bg') !important;
+      background-image: url('./assets/bg-2fa.png?v=20260612-red-bg-left') !important;
       background-size: cover !important;
       background-position: center center !important;
       justify-content: flex-start !important;
-      padding-left: clamp(70px, 9vw, 150px) !important;
-      padding-right: 48px !important;
+      align-items: center !important;
+      padding-left: clamp(56px, 7vw, 118px) !important;
+      padding-right: 24px !important;
     }
     body.verify-2fa-page::after {
-      background: linear-gradient(90deg, rgba(0,0,0,.30), rgba(0,0,0,.12) 48%, rgba(0,0,0,.38) 100%) !important;
+      background: linear-gradient(90deg, rgba(0,0,0,.62) 0%, rgba(0,0,0,.36) 30%, rgba(0,0,0,.08) 58%, rgba(0,0,0,.18) 100%) !important;
     }
     body.verify-2fa-page .auth-card {
-      margin-right: 0 !important;
       margin-left: 0 !important;
+      margin-right: auto !important;
+      transform: none !important;
     }
     @media (max-width: 900px) {
       body.verify-2fa-page {
         justify-content: center !important;
         padding-left: 24px !important;
         padding-right: 24px !important;
+      }
+      body.verify-2fa-page .auth-card {
+        margin-left: auto !important;
+        margin-right: auto !important;
       }
     }
   </style>

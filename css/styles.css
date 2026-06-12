@@ -435,3 +435,34 @@ body{
 @media (max-width:900px){
   .verify-2fa-page{justify-content:center !important;padding-left:24px !important;padding-right:24px !important;}
 }
+
+
+/* === REBUS final patch: nq favicon + 2FA modal left === */
+body.verify-2fa-page {
+  justify-content: flex-start !important;
+  align-items: center !important;
+  padding-left: clamp(56px, 7vw, 118px) !important;
+  padding-right: 24px !important;
+  background-image: url('../assets/bg-2fa.png?v=20260612-red-bg-left') !important;
+  background-size: cover !important;
+  background-position: center center !important;
+}
+body.verify-2fa-page::after {
+  background: linear-gradient(90deg, rgba(0,0,0,.62) 0%, rgba(0,0,0,.36) 30%, rgba(0,0,0,.08) 58%, rgba(0,0,0,.18) 100%) !important;
+}
+body.verify-2fa-page .auth-card {
+  margin-left: 0 !important;
+  margin-right: auto !important;
+  transform: none !important;
+}
+@media (max-width: 900px) {
+  body.verify-2fa-page {
+    justify-content: center !important;
+    padding-left: 24px !important;
+    padding-right: 24px !important;
+  }
+  body.verify-2fa-page .auth-card {
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+}
