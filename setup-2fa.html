@@ -6,6 +6,7 @@
   <title>REBUS Admin — 2FA</title>
   <link rel="stylesheet" href="css/styles.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <script src="js/config.js"></script>
   <script src="js/auth.js" defer></script>
 </head>
@@ -54,30 +55,72 @@
       return message || 'Сталася помилка.';
     }
 
-    function renderQr(qr) {
+    function renderQr(qr, uri) {
       const box = document.getElementById('qrBox');
-      if (!qr) {
-        box.innerHTML = '<span class="qr-loading">QR-код не отримано</span>';
-        return;
-      }
+      if (!box) return;
 
       const q = String(qr || '').trim();
-      if (q.startsWith('<svg')) {
-        box.innerHTML = qr;
-        const svg = box.querySelector('svg');
-        if (svg) {
-          svg.setAttribute('aria-label', 'QR code');
-          svg.removeAttribute('width');
-          svg.removeAttribute('height');
+      const u = String(uri || '').trim();
+      box.innerHTML = '';
+
+      // Supabase sometimes returns an inline SVG, and sometimes a data URI
+      // that contains an SVG. Rendering it as <img> may break on GitHub Pages,
+      // so we render SVG inline when possible.
+      const svgIndex = q.indexOf('<svg');
+      if (q.startsWith('<svg') || svgIndex >= 0) {
+        let svg = svgIndex >= 0 ? q.slice(svgIndex) : q;
+        try { svg = decodeURIComponent(svg); } catch (_) {}
+        box.innerHTML = svg;
+        const svgEl = box.querySelector('svg');
+        if (svgEl) {
+          svgEl.setAttribute('aria-label', 'QR code');
+          svgEl.removeAttribute('width');
+          svgEl.removeAttribute('height');
+          svgEl.setAttribute('viewBox', svgEl.getAttribute('viewBox') || '0 0 256 256');
         }
         return;
       }
 
-      if (q.startsWith('data:image')) {
-        box.innerHTML = `<img src="${q}" alt="QR code" style="width:100%;height:100%;object-fit:contain;" />`;
-      } else {
-        box.innerHTML = `<img src="${q}" alt="QR code" style="width:100%;height:100%;object-fit:contain;" />`;
+      if (q.startsWith('data:image') || q.startsWith('http')) {
+        const img = document.createElement('img');
+        img.alt = 'QR code';
+        img.src = q;
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.objectFit = 'contain';
+        img.onerror = () => {
+          if (window.QRCode && (u || q.startsWith('otpauth://'))) renderQrWithLibrary(u || q, box);
+          else box.innerHTML = '<span class="qr-loading">QR-код не вдалося показати</span>';
+        };
+        box.appendChild(img);
+        return;
       }
+
+      if (window.QRCode && (u || q.startsWith('otpauth://'))) {
+        renderQrWithLibrary(u || q, box);
+        return;
+      }
+
+      box.innerHTML = '<span class="qr-loading">QR-код не отримано</span>';
+    }
+
+    function renderQrWithLibrary(value, box) {
+      box.innerHTML = '';
+      const canvas = document.createElement('canvas');
+      box.appendChild(canvas);
+      window.QRCode.toCanvas(canvas, value, {
+        width: 236,
+        margin: 1,
+        color: { dark: '#000000', light: '#ffffff' }
+      }, (err) => {
+        if (err) {
+          box.innerHTML = '<span class="qr-loading">QR-код не вдалося створити</span>';
+          return;
+        }
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
+        canvas.style.objectFit = 'contain';
+      });
     }
 
     async function removeOldUnverifiedTotp(supabase) {
@@ -143,7 +186,7 @@
       if (!enrollData) return;
 
       factorId = enrollData.id;
-      renderQr(enrollData.totp?.qr_code);
+      renderQr(enrollData.totp?.qr_code, enrollData.totp?.uri);
 
       const { data: chData, error: chError } = await supabase.auth.mfa.challenge({ factorId });
       if (chError) {

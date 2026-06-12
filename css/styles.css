@@ -160,7 +160,8 @@ body{
   overflow:hidden;
 }
 .qr-box.qr-box-large img,
-.qr-box.qr-box-large svg{
+.qr-box.qr-box-large svg,
+.qr-box.qr-box-large canvas{
   width:236px !important;
   height:236px !important;
   display:block;
