@@ -61,7 +61,8 @@
         return;
       }
 
-      if (String(qr).trim().startsWith('<svg')) {
+      const q = String(qr || '').trim();
+      if (q.startsWith('<svg')) {
         box.innerHTML = qr;
         const svg = box.querySelector('svg');
         if (svg) {
@@ -72,7 +73,11 @@
         return;
       }
 
-      box.innerHTML = `<img src="${qr}" alt="QR code" />`;
+      if (q.startsWith('data:image')) {
+        box.innerHTML = `<img src="${q}" alt="QR code" style="width:100%;height:100%;object-fit:contain;" />`;
+      } else {
+        box.innerHTML = `<img src="${q}" alt="QR code" style="width:100%;height:100%;object-fit:contain;" />`;
+      }
     }
 
     async function removeOldUnverifiedTotp(supabase) {
