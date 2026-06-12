@@ -4,10 +4,10 @@
   <title>REBUS — Надати доступ</title>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="icon" type="image/png" href="assets/favicon.png?v=20260612-nq-access-v2" />
-  <link rel="shortcut icon" type="image/png" href="assets/favicon.png?v=20260612-nq-access-v2" />
-  <link rel="apple-touch-icon" href="assets/favicon.png?v=20260612-nq-access-v2" />
-  <link rel="stylesheet" href="css/styles.css?v=20260612-access-v2" />
+  <link rel="icon" type="image/png" href="assets/favicon.png?v=20260612-nq-access-workflow-v3" />
+  <link rel="shortcut icon" type="image/png" href="assets/favicon.png?v=20260612-nq-access-workflow-v3" />
+  <link rel="apple-touch-icon" href="assets/favicon.png?v=20260612-nq-access-workflow-v3" />
+  <link rel="stylesheet" href="css/styles.css?v=20260612-access-workflow-v3" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/config.js"></script>
   <script src="js/auth.js" defer></script>
@@ -87,7 +87,7 @@
       function notice(text,type=''){
         requestsNotice.innerHTML = text ? `<div class="notice ${type}">${A.esc(text)}</div>` : '';
       }
-      function reqStatus(r){ return String(r?.status || 'pending').toLowerCase(); }
+      function reqStatus(r){ const s = String(r?.status || 'pending').toLowerCase(); return s === 'new' ? 'pending' : (s === 'rejected' ? 'denied' : s); }
       function reqStatusLabel(s){ return {pending:'Очікує', approved:'Схвалено', denied:'Відхилено'}[s] || 'Очікує'; }
       function updateRequestCounts(){
         const all = state.requests;
@@ -146,6 +146,13 @@
         if(!admin.error) ok = true; else lastError = admin.error;
         if(!ok) throw lastError || new Error('Не вдалося створити доступ.');
         await A.logEvent(supabase, { marker:base.marker, email:base.email, action:`Надано доступ (${A.roleLabel(base.role)})`, status:'success' });
+        // Якщо для цього email була заявка — автоматично позначаємо її як схвалену.
+        try {
+          await supabase.from('access_requests')
+            .update({status:'approved', marker:base.marker, role:base.role, updated_at:new Date().toISOString()})
+            .eq('email', base.email)
+            .in('status', ['pending', 'new']);
+        } catch(_) {}
       }
 
       async function loadRequests(){
@@ -201,7 +208,9 @@
         const deny = e.target.closest('[data-deny]');
         if(deny){
           const r = state.requests.find(x => String(x.id) === String(deny.dataset.deny));
-          await supabase.from('access_requests').update({status:'denied', updated_at:new Date().toISOString()}).eq('id', deny.dataset.deny);
+          if(!confirm(`Відхилити запит ${r?.email || ''}?`)) return;
+          const { error } = await supabase.from('access_requests').update({status:'denied', updated_at:new Date().toISOString()}).eq('id', deny.dataset.deny);
+          if(error){ notice(`Не вдалося відхилити запит: ${error.message}`, 'error'); return; }
           await A.logEvent(supabase,{email:r?.email || '—',marker:r?.marker || '—',action:'Відхилено запит на доступ',status:'success'});
           loadRequests();
         }
