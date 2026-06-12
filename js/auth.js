@@ -3,7 +3,7 @@ const supabaseClient = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABA
 
 const $ = (id) => document.getElementById(id);
 const setStatus = (text, type = '') => {
-  const el = $('status');
+  const el = $('authStatus') || $('status');
   if (!el) return;
   el.textContent = text || '';
   el.className = `status ${type}`;
@@ -79,3 +79,34 @@ async function routeAfterLogin() {
 }
 
 window.rebusAuth = { supabase: supabaseClient, $, setStatus, getSession, requireAdmin, getAuthenticatorFactors, getAal, routeAfterLogin };
+
+
+async function startGoogleLogin() {
+  const btn = $('googleLoginBtn');
+  try {
+    if (btn) btn.disabled = true;
+    setStatus('Відкриваю вхід через Google...');
+    const { error } = await supabaseClient.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}${window.location.pathname}`
+      }
+    });
+    if (error) throw error;
+  } catch (error) {
+    setStatus(error?.message || 'Не вдалося відкрити вхід.', 'error');
+    if (btn) btn.disabled = false;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const btn = $('googleLoginBtn');
+  if (btn) btn.addEventListener('click', startGoogleLogin);
+
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('error') === 'access_denied') {
+    setStatus('Доступ заборонено. Email не додано до REBUS Admin.', 'error');
+  }
+
+  await routeAfterLogin();
+});
