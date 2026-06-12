@@ -199,7 +199,7 @@ body{
 }
 
 
-/* REBUS safe v1.2 minimal entry: no button panel, only the word ВХІД */
+/* REBUS safe v1.1 minimal entry */
 .entry-login-page {
   min-height: 100vh;
   overflow: hidden;
@@ -209,57 +209,57 @@ body{
   min-height: 100vh;
   width: 100%;
   position: relative;
-  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  padding-right: clamp(130px, 15vw, 280px);
-  padding-top: 56px;
+  padding-right: clamp(90px, 9vw, 170px);
 }
 
 .entry-minimal {
-  width: min(520px, 38vw);
+  width: min(700px, 46vw);
   min-height: 260px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  transform: translateY(18px);
+  transform: translateY(140px);
   user-select: none;
 }
 
-.entry-login {
-  margin-top: 92px;
-  border: 0 !important;
-  outline: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  appearance: none;
-  -webkit-appearance: none;
-  color: rgba(168, 22, 52, .78);
-  font-size: clamp(18px, 1.65vw, 29px);
-  line-height: 1;
+.entry-title {
+  font-size: clamp(56px, 5.4vw, 88px);
+  line-height: .92;
   font-weight: 900;
-  letter-spacing: .44em;
-  cursor: pointer;
-  padding: 8px 0 8px .44em;
-  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: rgba(255,255,255,.94);
   text-shadow:
-    0 0 8px rgba(190, 24, 56, .26),
-    0 0 18px rgba(80, 0, 22, .32),
-    0 2px 3px rgba(0, 0, 0, .72);
-  transition: transform .16s ease, color .16s ease, text-shadow .16s ease, opacity .16s ease;
-  -webkit-tap-highlight-color: transparent;
+    0 3px 0 rgba(0,0,0,.65),
+    0 18px 42px rgba(0,0,0,.6);
 }
 
-.entry-login:hover,
-.entry-login:focus-visible {
-  transform: scale(1.035);
-  color: rgba(225, 38, 76, .95);
+.entry-login {
+  margin-top: 30px;
+  border: 0;
+  background: transparent;
+  color: #e83c62;
+  font-size: clamp(20px, 1.8vw, 34px);
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: .22em;
+  cursor: pointer;
+  padding: 10px 18px 10px 26px;
   text-shadow:
-    0 0 10px rgba(225, 38, 76, .48),
-    0 0 26px rgba(160, 0, 42, .42),
-    0 2px 3px rgba(0, 0, 0, .75);
+    0 0 12px rgba(232, 60, 98, .42),
+    0 0 30px rgba(160, 0, 42, .35);
+  transition: transform .16s ease, color .16s ease, text-shadow .16s ease, opacity .16s ease;
+}
+
+.entry-login:hover {
+  transform: scale(1.055);
+  color: #ff4f78;
+  text-shadow:
+    0 0 16px rgba(255, 79, 120, .65),
+    0 0 42px rgba(160, 0, 42, .55);
 }
 
 .entry-login:disabled {
@@ -270,7 +270,7 @@ body{
 
 .entry-status {
   min-height: 24px;
-  margin-top: 22px;
+  margin-top: 24px;
   max-width: 380px;
   text-align: center;
   color: #ff9ab0;
@@ -308,9 +308,5 @@ body{
   }
   .entry-minimal {
     width: 100%;
-    transform: translateY(20px);
-  }
-  .entry-login {
-    margin-top: 120px;
   }
 }
