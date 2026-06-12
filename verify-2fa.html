@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>REBUS Admin — 2FA</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/auth.js" defer></script>
+</head>
+<body class="bg-page bg-login">
+  <main class="auth-card">
+    <div class="brand">
+      <img src="assets/key.png" alt="REBUS" />
+      <h1>REBUS <span>Admin</span></h1>
+    </div>
+    <h2 class="title">Підтвердження входу</h2>
+    <p class="sub">Введіть 6-значний код із застосунку автентифікації, щоб продовжити роботу.</p>
+    <div class="stack">
+      <input id="codeInput" class="input" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" />
+      <button id="verifyBtn" class="btn">Підтвердити</button>
+      <button id="logoutBtn" class="btn secondary">Вийти</button>
+    </div>
+    <div id="status" class="status"></div>
+  </main>
+  <script>
+    let factorId = null;
+    let challengeId = null;
+    window.addEventListener('DOMContentLoaded', async () => {
+      const { supabase, requireAdmin, setStatus, getAuthenticatorFactors, getAal } = window.rebusAuth;
+      const ctx = await requireAdmin();
+      if (!ctx) return;
+      const aal = await getAal();
+      if (aal === 'aal2') { location.href = 'dashboard.html'; return; }
+      const factors = await getAuthenticatorFactors();
+      if (!factors.length) { location.href = 'setup-2fa.html'; return; }
+      factorId = factors[0].id;
+      const { data, error } = await supabase.auth.mfa.challenge({ factorId });
+      if (error) { setStatus(error.message, 'error'); return; }
+      challengeId = data.id;
+      setStatus('Очікую код 2FA.');
+
+      document.getElementById('verifyBtn').addEventListener('click', async () => {
+        const code = document.getElementById('codeInput').value.trim();
+        if (code.length !== 6) { setStatus('Введіть 6 цифр.', 'error'); return; }
+        setStatus('Перевіряю код...');
+        const { error } = await supabase.auth.mfa.verify({ factorId, challengeId, code });
+        if (error) { setStatus('Код неправильний або застарів.', 'error'); return; }
+        location.href = 'dashboard.html';
+      });
+      document.getElementById('logoutBtn').addEventListener('click', async () => { await supabase.auth.signOut(); location.href='index.html'; });
+    });
+  </script>
+</body>
+</html>
