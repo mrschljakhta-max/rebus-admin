@@ -1,16 +1,56 @@
-<!doctype html><html lang="uk"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>REBUS — Налаштування</title><link rel="stylesheet" href="css/styles.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="js/config.js"></script><script src="js/auth.js" defer></script></head><body><div class="app-shell"><aside class="sidebar"><div class="brand"><img src="assets/key.png"><h1>REBUS <span>Admin</span></h1></div><nav class="nav"><a href="dashboard.html">Головна</a><a href="users.html">Користувачі</a><a href="access.html">Надати доступ</a><a href="events.html">Журнал</a><a class="active" href="settings.html">Налаштування</a></nav></aside><main class="main"><div class="topbar"><h2>Налаштування</h2><div class="user-pill" id="adminEmail"></div></div><section class="panel"><div class="panel-header"><h3>Сесія</h3></div><div style="padding:20px"><button id="logoutBtn" class="btn secondary">Вийти</button></div></section></main></div><script>window.addEventListener('DOMContentLoaded',async()=>{const{requireAdmin,getAal,supabase}=window.rebusAuth;const ctx=await requireAdmin();if(!ctx)return;if(await getAal()!=='aal2'){location.href='verify-2fa.html';return}adminEmail.textContent=ctx.session.user.email;logoutBtn.onclick=async()=>{await supabase.auth.signOut();location.href='index.html'}})</script>
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>REBUS Admin — 2FA</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/auth.js" defer></script>
+</head>
+<body class="bg-page bg-login">
+  <main class="auth-card">
+    <div class="brand">
+      <img src="assets/key.png" alt="REBUS" />
+      <h1>REBUS <span>Admin</span></h1>
+    </div>
+    <h2 class="title">Підтвердження входу</h2>
+    <p class="sub">Введіть 6-значний код із застосунку автентифікації, щоб продовжити роботу.</p>
+    <div class="stack">
+      <input id="codeInput" class="input" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" />
+      <button id="verifyBtn" class="btn">Підтвердити</button>
+      <button id="logoutBtn" class="btn secondary">Вийти</button>
+    </div>
+    <div id="status" class="status"></div>
+  </main>
   <script>
-    window.addEventListener('DOMContentLoaded', () => {
-      const btn = document.getElementById('logoutBtn');
-      if (!btn || !window.rebusAuth?.supabase) return;
-      btn.addEventListener('click', async () => {
-        btn.disabled = true;
-        btn.textContent = 'Вихід...';
-        await window.rebusAuth.supabase.auth.signOut();
-        location.href = 'index.html';
-      });
-    });
-    window.rebusLogoutHandler = true;
-  </script>
+    let factorId = null;
+    let challengeId = null;
+    window.addEventListener('DOMContentLoaded', async () => {
+      const { supabase, requireAdmin, setStatus, getAuthenticatorFactors, getAal } = window.rebusAuth;
+      const ctx = await requireAdmin();
+      if (!ctx) return;
+      const aal = await getAal();
+      if (aal === 'aal2') { location.href = 'dashboard.html'; return; }
+      const factors = await getAuthenticatorFactors();
+      if (!factors.length) { location.href = 'setup-2fa.html'; return; }
+      factorId = factors[0].id;
+      const { data, error } = await supabase.auth.mfa.challenge({ factorId });
+      if (error) { setStatus(error.message, 'error'); return; }
+      challengeId = data.id;
+      setStatus('Очікую код 2FA.');
 
-</body></html>
+      document.getElementById('verifyBtn').addEventListener('click', async () => {
+        const code = document.getElementById('codeInput').value.trim();
+        if (code.length !== 6) { setStatus('Введіть 6 цифр.', 'error'); return; }
+        setStatus('Перевіряю код...');
+        const { error } = await supabase.auth.mfa.verify({ factorId, challengeId, code });
+        if (error) { setStatus('Код неправильний або застарів.', 'error'); return; }
+        location.href = 'dashboard.html';
+      });
+      document.getElementById('logoutBtn').addEventListener('click', async () => { await supabase.auth.signOut(); location.href='index.html'; });
+    });
+  </script>
+</body>
+</html>
