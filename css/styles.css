@@ -468,30 +468,10 @@ body.verify-2fa-page .auth-card {
 }
 
 
-/* === REBUS admin pages repair v1 === */
-.brand-logo{
-  width:44px !important;
-  height:44px !important;
-  object-fit:contain;
-  border-radius:10px;
-}
-.auth-card .brand-logo{
-  width:54px !important;
-  height:54px !important;
-}
-.admin-brand{margin-bottom:30px;}
-.panel-body{padding:20px;}
-.settings-cards{grid-template-columns:repeat(3,minmax(0,1fr));}
-.settings-value{font-size:18px;font-weight:800;margin-top:8px;overflow-wrap:anywhere;}
-.settings-row{
-  display:flex;
-  justify-content:space-between;
-  gap:18px;
-  padding:14px 0;
-  border-bottom:1px solid rgba(255,255,255,.08);
-  color:var(--muted);
-}
-.settings-row:last-child{border-bottom:0;}
-.settings-row strong{color:var(--text);}
-.ok-text{color:var(--ok) !important;}
-@media(max-width:900px){.settings-cards{grid-template-columns:1fr;}}
+/* === REBUS admin pages repair v20260612 === */
+.sidebar{display:flex;flex-direction:column;min-height:100vh;}
+.sidebar .brand img{width:42px;height:42px;object-fit:contain;}
+.brand img{object-fit:contain;}
+.nav a:empty{display:none;}
+.sidebar-footer{margin-top:auto;}
+@media(max-width:900px){.sidebar{display:none;}.main{padding:22px;}}

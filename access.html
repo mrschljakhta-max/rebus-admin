@@ -1,76 +1,65 @@
 <!doctype html>
 <html lang="uk">
 <head>
+  <title>REBUS — Надати доступ</title>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>REBUS Admin — Надати доступ</title>
-  <link rel="icon" type="image/png" sizes="512x512" href="assets/favicon.png?v=20260612-nq-pages-v1" />
-  <link rel="shortcut icon" type="image/png" href="assets/favicon.png?v=20260612-nq-pages-v1" />
-  <link rel="apple-touch-icon" href="assets/favicon.png?v=20260612-nq-pages-v1" />
-  <link rel="stylesheet" href="css/styles.css?v=20260612-nq-pages-v1" />
+  <link rel="icon" type="image/png" href="assets/favicon.png?v=20260612-nq-3" />
+  <link rel="shortcut icon" type="image/png" href="assets/favicon.png?v=20260612-nq-3" />
+  <link rel="apple-touch-icon" href="assets/favicon.png?v=20260612-nq-3" />
+  <link rel="stylesheet" href="css/styles.css?v=20260612-pages-fix" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/config.js"></script>
   <script src="js/auth.js" defer></script>
 </head>
 <body>
   <div class="app-shell">
-  <aside class="sidebar">
-    <div class="brand admin-brand"><img class="brand-logo" src="assets/favicon.png?v=20260612-nq-pages-v1" alt="REBUS"><h1>REBUS <span>Admin</span></h1></div>
-    <nav class="nav">
-      <a class="" href="dashboard.html">Головна</a>
-      <a class="" href="users.html">Користувачі</a>
-      <a class="active" href="access.html">Надати доступ</a>
-      <a class="" href="events.html">Журнал</a>
-      <a class="" href="settings.html">Налаштування</a>
-    </nav>
-    <div class="sidebar-footer">
-      <button id="logoutBtn" class="logout-btn" type="button">Вийти</button>
-    </div>
-  </aside>
+    <aside class="sidebar">
+      <div class="brand"><img src="assets/favicon.png" alt="REBUS"><h1>REBUS <span>Admin</span></h1></div>
+      <nav class="nav">
+        <a class="" href="dashboard.html">Головна</a>
+        <a class="" href="users.html">Користувачі</a>
+        <a class="active" href="access.html">Надати доступ</a>
+        <a class="" href="events.html">Журнал</a>
+      </nav>
+      <div class="sidebar-footer">
+        <button id="logoutBtn" class="logout-btn" type="button">Вийти</button>
+      </div>
+    </aside>
     <main class="main">
       <div class="topbar"><h2>Надати доступ</h2><div class="user-pill" id="adminEmail"></div></div>
       <section class="panel">
         <div class="panel-header"><h3>Новий користувач</h3></div>
-        <div class="panel-body">
+        <div style="padding:20px">
           <div class="form-grid">
             <div class="field"><label>Email</label><input id="email" placeholder="user@gmail.com"></div>
             <div class="field"><label>Маркер</label><input id="marker" placeholder="RREB-01"></div>
-            <div class="field"><label>Ім’я</label><input id="fullName" placeholder="необов'язково"></div>
+            <div class="field"><label>Ім'я</label><input id="fullName" placeholder="необов'язково"></div>
             <div class="field"><label>Роль</label><select id="role"><option value="user">user</option><option value="admin">admin</option></select></div>
           </div>
-          <div class="actions"><button id="createBtn" class="btn" type="button">Надати доступ</button></div>
+          <div class="actions"><button id="createBtn" class="btn">Надати доступ</button></div>
           <div id="status" class="status"></div>
         </div>
       </section>
     </main>
   </div>
   <script>
-    window.addEventListener('DOMContentLoaded', async () => {
-      const { supabase, requireAdmin, getAal, setStatus } = window.rebusAuth;
-      const ctx = await requireAdmin(); if (!ctx) return;
-      if (await getAal() !== 'aal2') { location.href = 'verify-2fa.html'; return; }
-      document.getElementById('adminEmail').textContent = ctx.session.user.email;
-      document.getElementById('createBtn').addEventListener('click', async () => {
-        const payload = {
-          email: document.getElementById('email').value.trim(),
-          marker: document.getElementById('marker').value.trim(),
-          full_name: document.getElementById('fullName').value.trim() || null,
-          role: document.getElementById('role').value,
-          is_active: true
-        };
-        if (!payload.email || !payload.marker) { setStatus('Email і маркер обов’язкові.', 'error'); return; }
+    window.addEventListener('DOMContentLoaded',async()=>{
+      const{supabase,requireAdmin,getAal,setStatus}=window.rebusAuth;
+      const ctx=await requireAdmin(); if(!ctx)return;
+      if(await getAal()!=='aal2'){location.href='verify-2fa.html';return}
+      document.getElementById('adminEmail').textContent=ctx.session.user.email;
+      document.getElementById('createBtn').onclick=async()=>{
         setStatus('Створюю доступ...');
-        const { error } = await supabase.from('rebus_profiles').insert(payload);
-        if (error) { setStatus(error.message, 'error'); return; }
-        if (payload.role === 'admin') {
-          await supabase.from('rebus_admin_access').insert({ email: payload.email, marker: payload.marker, role: 'admin', is_active: true, mfa_required: true });
-        }
-        setStatus('Доступ надано.', 'ok');
-        document.getElementById('email').value = '';
-        document.getElementById('marker').value = '';
-        document.getElementById('fullName').value = '';
-      });
-    });
+        const payload={email:email.value.trim(),marker:marker.value.trim(),full_name:fullName.value.trim()||null,role:role.value,is_active:true};
+        if(!payload.email||!payload.marker){setStatus('Email і маркер обов’язкові.','error');return}
+        const{error}=await supabase.from('rebus_profiles').insert(payload);
+        if(error){setStatus(error.message,'error');return}
+        if(payload.role==='admin'){await supabase.from('rebus_admin_access').insert({email:payload.email,marker:payload.marker,role:'admin',is_active:true,mfa_required:true});}
+        setStatus('Доступ надано.','ok');
+        email.value=''; marker.value=''; fullName.value=''; role.value='user';
+      }
+    })
   </script>
   <script src="js/logout.js" defer></script>
 </body>

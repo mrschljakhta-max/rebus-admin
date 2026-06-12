@@ -3,60 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>REBUS Admin — Налаштування</title>
-  <link rel="icon" type="image/png" sizes="512x512" href="assets/favicon.png?v=20260612-nq-pages-v1" />
-  <link rel="shortcut icon" type="image/png" href="assets/favicon.png?v=20260612-nq-pages-v1" />
-  <link rel="apple-touch-icon" href="assets/favicon.png?v=20260612-nq-pages-v1" />
-  <link rel="stylesheet" href="css/styles.css?v=20260612-nq-pages-v1" />
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/config.js"></script>
-  <script src="js/auth.js" defer></script>
+  <title>REBUS — Налаштування прибрано</title>
+  <link rel="icon" type="image/png" href="assets/favicon.png?v=20260612-nq-3" />
+  <meta http-equiv="refresh" content="0; url=dashboard.html" />
 </head>
 <body>
-  <div class="app-shell">
-  <aside class="sidebar">
-    <div class="brand admin-brand"><img class="brand-logo" src="assets/favicon.png?v=20260612-nq-pages-v1" alt="REBUS"><h1>REBUS <span>Admin</span></h1></div>
-    <nav class="nav">
-      <a class="" href="dashboard.html">Головна</a>
-      <a class="" href="users.html">Користувачі</a>
-      <a class="" href="access.html">Надати доступ</a>
-      <a class="" href="events.html">Журнал</a>
-      <a class="active" href="settings.html">Налаштування</a>
-    </nav>
-    <div class="sidebar-footer">
-      <button id="logoutBtn" class="logout-btn" type="button">Вийти</button>
-    </div>
-  </aside>
-    <main class="main">
-      <div class="topbar"><h2>Налаштування</h2><div class="user-pill" id="adminEmail"></div></div>
-      <section class="cards settings-cards">
-        <div class="card"><div class="label">Поточний акаунт</div><div id="currentEmail" class="settings-value">—</div></div>
-        <div class="card"><div class="label">Рівень доступу</div><div id="aalValue" class="settings-value">—</div></div>
-        <div class="card"><div class="label">MFA</div><div id="mfaValue" class="settings-value">—</div></div>
-      </section>
-      <section class="panel">
-        <div class="panel-header"><h3>Системні параметри</h3></div>
-        <div class="panel-body">
-          <div class="settings-row"><span>Брендовий логотип</span><strong>nq / REBUS</strong></div>
-          <div class="settings-row"><span>Сторінка входу</span><strong>Google OAuth + 2FA</strong></div>
-          <div class="settings-row"><span>Статус</span><strong class="ok-text">Активно</strong></div>
-        </div>
-      </section>
-    </main>
-  </div>
-  <script>
-    window.addEventListener('DOMContentLoaded', async () => {
-      const { requireAdmin, getAal, getAuthenticatorFactors } = window.rebusAuth;
-      const ctx = await requireAdmin(); if (!ctx) return;
-      const aal = await getAal();
-      if (aal !== 'aal2') { location.href = 'verify-2fa.html'; return; }
-      const factors = await getAuthenticatorFactors();
-      document.getElementById('adminEmail').textContent = ctx.session.user.email;
-      document.getElementById('currentEmail').textContent = ctx.session.user.email;
-      document.getElementById('aalValue').textContent = aal;
-      document.getElementById('mfaValue').textContent = factors.length ? 'Підключено' : 'Не підключено';
-    });
-  </script>
-  <script src="js/logout.js" defer></script>
+  <script>location.replace('dashboard.html')</script>
 </body>
 </html>
