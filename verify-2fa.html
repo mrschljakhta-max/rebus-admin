@@ -4,13 +4,39 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>REBUS Admin — 2FA</title>
-  <link rel="icon" href="favicon.ico?v=12" sizes="any" />
-  <link rel="icon" type="image/png" href="favicon.png?v=12" />
-  <link rel="shortcut icon" href="favicon.ico?v=12" />
-  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="icon" type="image/png" sizes="192x192" href="./favicon.png?v=20260612-red-r" />
+  <link rel="icon" type="image/x-icon" href="./favicon.ico?v=20260612-red-r" />
+  <link rel="shortcut icon" type="image/x-icon" href="./favicon.ico?v=20260612-red-r" />
+  <link rel="apple-touch-icon" href="./favicon.png?v=20260612-red-r" />
+  <link rel="stylesheet" href="css/styles.css?v=20260612-red-2fa" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/config.js"></script>
   <script src="js/auth.js" defer></script>
+
+  <style>
+    body.verify-2fa-page {
+      background-image: url('./assets/bg-2fa.png?v=20260612-red-bg') !important;
+      background-size: cover !important;
+      background-position: center center !important;
+      justify-content: flex-start !important;
+      padding-left: clamp(70px, 9vw, 150px) !important;
+      padding-right: 48px !important;
+    }
+    body.verify-2fa-page::after {
+      background: linear-gradient(90deg, rgba(0,0,0,.30), rgba(0,0,0,.12) 48%, rgba(0,0,0,.38) 100%) !important;
+    }
+    body.verify-2fa-page .auth-card {
+      margin-right: 0 !important;
+      margin-left: 0 !important;
+    }
+    @media (max-width: 900px) {
+      body.verify-2fa-page {
+        justify-content: center !important;
+        padding-left: 24px !important;
+        padding-right: 24px !important;
+      }
+    }
+  </style>
 </head>
 <body class="bg-page bg-2fa verify-2fa-page">
   <main class="auth-card">

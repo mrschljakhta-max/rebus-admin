@@ -1,5 +1,6 @@
 <!doctype html><html lang="uk"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>REBUS — Налаштування</title>
-  <link rel="icon" href="favicon.ico?v=12" sizes="any" />
-  <link rel="icon" type="image/png" href="favicon.png?v=12" />
-  <link rel="shortcut icon" href="favicon.ico?v=12" /><link rel="stylesheet" href="css/styles.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="js/config.js"></script><script src="js/auth.js" defer></script></head><body><div class="app-shell"><aside class="sidebar"><div class="brand"><img src="assets/key.png"><h1>REBUS <span>Admin</span></h1></div><nav class="nav"><a href="dashboard.html">Головна</a><a href="users.html">Користувачі</a><a href="access.html">Надати доступ</a><a href="events.html">Журнал</a><a class="active" href="settings.html">Налаштування</a></nav></aside><main class="main"><div class="topbar"><h2>Налаштування</h2><div class="user-pill" id="adminEmail"></div></div><section class="panel"><div class="panel-header"><h3>Сесія</h3></div><div style="padding:20px"><button id="logoutBtn" class="btn secondary">Вийти</button></div></section></main></div><script>window.addEventListener('DOMContentLoaded',async()=>{const{requireAdmin,getAal,supabase}=window.rebusAuth;const ctx=await requireAdmin();if(!ctx)return;if(await getAal()!=='aal2'){location.href='verify-2fa.html';return}adminEmail.textContent=ctx.session.user.email;logoutBtn.onclick=async()=>{await supabase.auth.signOut();location.href='index.html'}})</script>  <script src="js/logout.js" defer></script>
+  <link rel="icon" type="image/png" sizes="192x192" href="./favicon.png?v=20260612-red-r" />
+  <link rel="icon" type="image/x-icon" href="./favicon.ico?v=20260612-red-r" />
+  <link rel="shortcut icon" type="image/x-icon" href="./favicon.ico?v=20260612-red-r" />
+  <link rel="apple-touch-icon" href="./favicon.png?v=20260612-red-r" />
 </body></html>

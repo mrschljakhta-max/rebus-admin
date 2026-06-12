@@ -408,3 +408,30 @@ body{
   .verify-2fa-page .auth-card{margin-right:0;}
   .entry-login-page .entry-minimal{left:65%;top:57%;}
 }
+
+
+/* REBUS hard final fix: red 2FA screen + stable entry + favicon cache bust handled in HTML */
+.bg-2fa, body.verify-2fa-page{
+  background-image:url('../assets/bg-2fa.png?v=20260612-red-bg') !important;
+  background-size:cover !important;
+  background-position:center center !important;
+}
+.verify-2fa-page{
+  justify-content:flex-start !important;
+  padding-left:clamp(70px, 9vw, 150px) !important;
+  padding-right:48px !important;
+}
+.verify-2fa-page::after{
+  background:linear-gradient(90deg, rgba(0,0,0,.30), rgba(0,0,0,.12) 48%, rgba(0,0,0,.38) 100%) !important;
+}
+.verify-2fa-page .auth-card{
+  margin-left:0 !important;
+  margin-right:0 !important;
+}
+.entry-login-page .entry-minimal{
+  left:67% !important;
+  top:56.6% !important;
+}
+@media (max-width:900px){
+  .verify-2fa-page{justify-content:center !important;padding-left:24px !important;padding-right:24px !important;}
+}
