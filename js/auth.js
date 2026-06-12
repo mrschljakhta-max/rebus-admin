@@ -1,5 +1,5 @@
 const cfg = window.REBUS_CONFIG || {};
-const supabase = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+const supabaseClient = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
 
 const $ = (id) => document.getElementById(id);
 const setStatus = (text, type = '') => {
@@ -10,12 +10,12 @@ const setStatus = (text, type = '') => {
 };
 
 async function getSession() {
-  const { data } = await supabase.auth.getSession();
+  const { data } = await supabaseClient.auth.getSession();
   return data.session;
 }
 
 async function getAdminProfile(email) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from(cfg.ADMIN_TABLE)
     .select('*')
     .eq('email', email)
@@ -33,7 +33,7 @@ async function requireAdmin() {
   }
   const admin = await getAdminProfile(session.user.email);
   if (!admin) {
-    await supabase.auth.signOut();
+    await supabaseClient.auth.signOut();
     location.href = 'index.html?error=access_denied';
     return null;
   }
@@ -41,13 +41,13 @@ async function requireAdmin() {
 }
 
 async function getAuthenticatorFactors() {
-  const { data, error } = await supabase.auth.mfa.listFactors();
+  const { data, error } = await supabaseClient.auth.mfa.listFactors();
   if (error) return [];
   return (data?.totp || []).filter((f) => f.status === 'verified');
 }
 
 async function getAal() {
-  const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  const { data } = await supabaseClient.auth.mfa.getAuthenticatorAssuranceLevel();
   return data?.currentLevel || 'aal1';
 }
 
@@ -59,7 +59,7 @@ async function routeAfterLogin() {
   const admin = await getAdminProfile(session.user.email);
   if (!admin) {
     setStatus('Доступ заборонено. Email не додано до REBUS Admin.', 'error');
-    await supabase.auth.signOut();
+    await supabaseClient.auth.signOut();
     return;
   }
 
@@ -78,4 +78,4 @@ async function routeAfterLogin() {
   location.href = 'dashboard.html';
 }
 
-window.rebusAuth = { supabase, $, setStatus, getSession, requireAdmin, getAuthenticatorFactors, getAal, routeAfterLogin };
+window.rebusAuth = { supabase: supabaseClient, $, setStatus, getSession, requireAdmin, getAuthenticatorFactors, getAal, routeAfterLogin };
