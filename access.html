@@ -4,38 +4,39 @@
   <title>REBUS — Надати доступ</title>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="icon" type="image/png" href="assets/favicon.png?v=20260612-nq-3" />
-  <link rel="shortcut icon" type="image/png" href="assets/favicon.png?v=20260612-nq-3" />
-  <link rel="apple-touch-icon" href="assets/favicon.png?v=20260612-nq-3" />
-  <link rel="stylesheet" href="css/styles.css?v=20260612-pages-fix" />
+  <link rel="icon" type="image/png" href="assets/favicon.png?v=20260612-nq-actions" />
+  <link rel="shortcut icon" type="image/png" href="assets/favicon.png?v=20260612-nq-actions" />
+  <link rel="apple-touch-icon" href="assets/favicon.png?v=20260612-nq-actions" />
+  <link rel="stylesheet" href="css/styles.css?v=20260612-users-actions" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/config.js"></script>
   <script src="js/auth.js" defer></script>
+  <script src="js/admin-common.js" defer></script>
 </head>
 <body>
   <div class="app-shell">
     <aside class="sidebar">
       <div class="brand"><img src="assets/favicon.png" alt="REBUS"><h1>REBUS <span>Admin</span></h1></div>
-      <nav class="nav">
-        <a class="" href="dashboard.html">Головна</a>
-        <a class="" href="users.html">Користувачі</a>
-        <a class="active" href="access.html">Надати доступ</a>
-        <a class="" href="events.html">Журнал</a>
-      </nav>
-      <div class="sidebar-footer">
-        <button id="logoutBtn" class="logout-btn" type="button">Вийти</button>
-      </div>
+      <nav class="nav"><a href="dashboard.html">Головна</a><a href="users.html">Користувачі</a><a class="active" href="access.html">Надати доступ</a><a href="events.html">Журнал</a></nav>
+      <div class="sidebar-footer"><button id="logoutBtn" class="logout-btn" type="button">Вийти</button></div>
     </aside>
     <main class="main">
       <div class="topbar"><h2>Надати доступ</h2><div class="user-pill" id="adminEmail"></div></div>
+
       <section class="panel">
-        <div class="panel-header"><h3>Новий користувач</h3></div>
-        <div style="padding:20px">
+        <div class="panel-header"><h3>Запити на доступ</h3><button id="reloadRequests" class="small-btn">Оновити</button></div>
+        <div id="requestsNotice"></div>
+        <div class="form-card-body"><div id="requestsList" class="requests-grid"><div class="muted">Завантаження...</div></div></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header"><h3>Ручне надання доступу</h3></div>
+        <div class="form-card-body">
           <div class="form-grid">
             <div class="field"><label>Email</label><input id="email" placeholder="user@gmail.com"></div>
             <div class="field"><label>Маркер</label><input id="marker" placeholder="RREB-01"></div>
             <div class="field"><label>Ім'я</label><input id="fullName" placeholder="необов'язково"></div>
-            <div class="field"><label>Роль</label><select id="role"><option value="user">user</option><option value="admin">admin</option></select></div>
+            <div class="field"><label>Роль</label><select id="role"><option value="user">Користувач</option><option value="admin">Адміністратор</option></select></div>
           </div>
           <div class="actions"><button id="createBtn" class="btn">Надати доступ</button></div>
           <div id="status" class="status"></div>
@@ -43,23 +44,81 @@
       </section>
     </main>
   </div>
+
+  <div id="approveModal" class="modal-backdrop">
+    <div class="modal">
+      <h3>Схвалити запит</h3>
+      <p id="modalEmail" class="muted"></p>
+      <div class="form-grid">
+        <div class="field"><label>Маркер</label><input id="modalMarker" placeholder="RREB-01"></div>
+        <div class="field"><label>Роль</label><select id="modalRole"><option value="user">Користувач</option><option value="admin">Адміністратор</option></select></div>
+      </div>
+      <div class="modal-actions"><button id="cancelApprove" class="small-btn">Скасувати</button><button id="confirmApprove" class="small-btn primary">Схвалити</button></div>
+    </div>
+  </div>
+
   <script>
-    window.addEventListener('DOMContentLoaded',async()=>{
-      const{supabase,requireAdmin,getAal,setStatus}=window.rebusAuth;
-      const ctx=await requireAdmin(); if(!ctx)return;
-      if(await getAal()!=='aal2'){location.href='verify-2fa.html';return}
-      document.getElementById('adminEmail').textContent=ctx.session.user.email;
-      document.getElementById('createBtn').onclick=async()=>{
-        setStatus('Створюю доступ...');
-        const payload={email:email.value.trim(),marker:marker.value.trim(),full_name:fullName.value.trim()||null,role:role.value,is_active:true};
-        if(!payload.email||!payload.marker){setStatus('Email і маркер обов’язкові.','error');return}
-        const{error}=await supabase.from('rebus_profiles').insert(payload);
-        if(error){setStatus(error.message,'error');return}
-        if(payload.role==='admin'){await supabase.from('rebus_admin_access').insert({email:payload.email,marker:payload.marker,role:'admin',is_active:true,mfa_required:true});}
-        setStatus('Доступ надано.','ok');
-        email.value=''; marker.value=''; fullName.value=''; role.value='user';
+    window.addEventListener('DOMContentLoaded', async () => {
+      const { supabase, setStatus } = window.rebusAuth; const A = window.rebusAdmin;
+      const ctx = await A.getAdminContext(); if(!ctx)return;
+      A.renderAdminProfile(document.getElementById('adminEmail'), ctx.session, ctx.admin);
+      const requestsList = document.getElementById('requestsList');
+      const requestsNotice = document.getElementById('requestsNotice');
+      let selectedRequest = null;
+      function notice(text,type=''){ requestsNotice.innerHTML = text ? `<div class="notice ${type}">${A.esc(text)}</div>` : ''; }
+
+      async function grantAccess(payload){
+        const base = { email: payload.email, marker: payload.marker, full_name: payload.full_name || null, role: payload.role || 'user', status:'active', is_active:true, updated_at:new Date().toISOString() };
+        let ok = false, lastError = null;
+        const profilePayload = { ...base, created_at:new Date().toISOString() };
+        const prof = await supabase.from('rebus_profiles').upsert(profilePayload, { onConflict:'email' });
+        if(!prof.error) ok = true; else lastError = prof.error;
+        const adminPayload = { email:base.email, marker:base.marker, role:base.role, is_active:true, mfa_required:true, created_at:new Date().toISOString(), updated_at:new Date().toISOString() };
+        const admin = await supabase.from('rebus_admin_access').upsert(adminPayload, { onConflict:'email' });
+        if(!admin.error) ok = true; else lastError = admin.error;
+        if(!ok) throw lastError || new Error('Не вдалося створити доступ.');
+        await A.logEvent(supabase, { marker:base.marker, email:base.email, action:`Надано доступ (${base.role})`, status:'success' });
       }
-    })
+
+      async function loadRequests(){
+        requestsList.innerHTML = '<div class="muted">Завантаження...</div>'; notice('');
+        const { data, error } = await supabase.from('access_requests').select('*').order('created_at',{ascending:false});
+        if(error){ requestsList.innerHTML='<div class="muted">Запити недоступні</div>'; notice(`access_requests недоступна (${error.message}). Ручне надання доступу нижче працює окремо.`, ''); return; }
+        const pending = (data||[]).filter(r => !r.status || r.status === 'pending');
+        requestsList.innerHTML = pending.length ? pending.map(r => `<div class="request-card" data-id="${A.esc(r.id)}"><div><div class="email-main">${A.esc(r.email||'—')}</div><div class="request-meta">${A.esc(r.full_name||r.name||'Без імені')} · ${A.esc(A.fmtDate(r.created_at))}</div><div class="request-meta">${A.esc(r.message||'Повідомлення відсутнє')}</div></div><div class="request-actions"><button class="small-btn primary" data-approve="${A.esc(r.id)}">Схвалити</button><button class="small-btn danger" data-deny="${A.esc(r.id)}">Відхилити</button></div></div>`).join('') : '<div class="muted">Нових запитів немає</div>';
+        window.__requests = pending;
+      }
+
+      function openApprove(id){
+        selectedRequest = (window.__requests||[]).find(r => String(r.id) === String(id)); if(!selectedRequest)return;
+        document.getElementById('modalEmail').textContent = selectedRequest.email || '';
+        document.getElementById('modalMarker').value = selectedRequest.marker || '';
+        document.getElementById('modalRole').value = selectedRequest.role || 'user';
+        document.getElementById('approveModal').classList.add('open');
+      }
+      function closeApprove(){ document.getElementById('approveModal').classList.remove('open'); selectedRequest=null; }
+
+      document.getElementById('createBtn').onclick = async () => {
+        const payload = { email:email.value.trim(), marker:marker.value.trim(), full_name:fullName.value.trim(), role:role.value };
+        if(!payload.email || !payload.marker){ setStatus('Email і маркер обов’язкові.', 'error'); return; }
+        try { setStatus('Створюю доступ...'); await grantAccess(payload); setStatus('Доступ надано.', 'ok'); email.value=''; marker.value=''; fullName.value=''; role.value='user'; }
+        catch(e){ setStatus(e?.message || 'Помилка створення доступу.', 'error'); }
+      };
+      document.getElementById('reloadRequests').onclick = loadRequests;
+      document.getElementById('cancelApprove').onclick = closeApprove;
+      document.getElementById('confirmApprove').onclick = async () => {
+        if(!selectedRequest)return;
+        const payload = { email:selectedRequest.email, full_name:selectedRequest.full_name || selectedRequest.name, marker:document.getElementById('modalMarker').value.trim(), role:document.getElementById('modalRole').value };
+        if(!payload.marker){ alert('Потрібен маркер.'); return; }
+        try { await grantAccess(payload); await supabase.from('access_requests').update({status:'approved', updated_at:new Date().toISOString()}).eq('id', selectedRequest.id); closeApprove(); loadRequests(); }
+        catch(e){ alert(e?.message || 'Не вдалося схвалити запит.'); }
+      };
+      document.addEventListener('click', async e => {
+        const approve = e.target.closest('[data-approve]'); if(approve){ openApprove(approve.dataset.approve); return; }
+        const deny = e.target.closest('[data-deny]'); if(deny){ await supabase.from('access_requests').update({status:'denied', updated_at:new Date().toISOString()}).eq('id', deny.dataset.deny); await A.logEvent(supabase,{email:'—',action:'Відхилено запит на доступ',status:'success'}); loadRequests(); }
+      });
+      loadRequests();
+    });
   </script>
   <script src="js/logout.js" defer></script>
 </body>

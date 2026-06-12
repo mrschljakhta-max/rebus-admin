@@ -4,14 +4,14 @@
   <title>REBUS — Користувачі</title>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="icon" type="image/png" href="assets/favicon.png?v=20260612-users-v2" />
-  <link rel="shortcut icon" type="image/png" href="assets/favicon.png?v=20260612-users-v2" />
-  <link rel="apple-touch-icon" href="assets/favicon.png?v=20260612-users-v2" />
-  <link rel="stylesheet" href="css/styles.css?v=20260612-users-v2" />
+  <link rel="icon" type="image/png" href="assets/favicon.png?v=20260612-nq-actions" />
+  <link rel="shortcut icon" type="image/png" href="assets/favicon.png?v=20260612-nq-actions" />
+  <link rel="apple-touch-icon" href="assets/favicon.png?v=20260612-nq-actions" />
+  <link rel="stylesheet" href="css/styles.css?v=20260612-users-actions" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/config.js"></script>
   <script src="js/auth.js" defer></script>
-  <script src="js/admin-users.js" defer></script>
+  <script src="js/admin-common.js" defer></script>
 </head>
 <body>
   <div class="app-shell">
@@ -23,68 +23,188 @@
         <a href="access.html">Надати доступ</a>
         <a href="events.html">Журнал</a>
       </nav>
-      <div class="sidebar-footer">
-        <button id="logoutBtn" class="logout-btn" type="button">Вийти</button>
-      </div>
+      <div class="sidebar-footer"><button id="logoutBtn" class="logout-btn" type="button">Вийти</button></div>
     </aside>
 
-    <main class="main users-page-main">
-      <div class="topbar users-topbar">
+    <main class="main">
+      <div class="topbar">
         <h2>Користувачі</h2>
-        <div class="account-card">
-          <div class="account-avatar" id="currentAvatar">A</div>
-          <div class="account-meta">
-            <strong id="currentName">Адміністратор</strong>
-            <span id="currentEmail">—</span>
-            <em id="currentRole">Адміністратор</em>
-          </div>
-        </div>
+        <div class="user-pill" id="adminEmail"></div>
       </div>
 
-      <section class="users-toolbar panel-flat">
-        <div class="search-box">
-          <span>⌕</span>
-          <input id="usersSearch" type="search" placeholder="Пошук по email, маркеру або ролі..." autocomplete="off">
+      <section class="panel tools-panel">
+        <div class="search-row">
+          <div class="search-box"><input id="searchInput" class="search-input" placeholder="Пошук по email, маркеру або ролі..."></div>
         </div>
-        <div class="filter-row" aria-label="Фільтри статусу">
-          <button class="filter-chip active" type="button" data-filter="all">Всі <b class="filter-count">0</b></button>
-          <button class="filter-chip" type="button" data-filter="active">Активні <b class="filter-count">0</b></button>
-          <button class="filter-chip" type="button" data-filter="inactive">Неактивні <b class="filter-count">0</b></button>
-          <button class="filter-chip" type="button" data-filter="deleted">Видалені <b class="filter-count">0</b></button>
+        <div class="filter-row">
+          <button class="filter-btn active" data-filter="all">Всі <span id="countAll" class="count-pill">0</span></button>
+          <button class="filter-btn" data-filter="active">Активні <span id="countActive" class="count-pill">0</span></button>
+          <button class="filter-btn" data-filter="inactive">Неактивні <span id="countInactive" class="count-pill">0</span></button>
+          <button class="filter-btn" data-filter="deleted">Видалені <span id="countDeleted" class="count-pill">0</span></button>
         </div>
       </section>
 
-      <section class="panel users-table-panel">
-        <div id="usersWarning" class="inline-warning" hidden></div>
-        <table class="table users-table">
-          <thead>
-            <tr>
-              <th><button type="button" class="sort-btn" data-sort="marker">Маркер ⇅</button></th>
-              <th><button type="button" class="sort-btn" data-sort="email">Email ⇅</button></th>
-              <th><button type="button" class="sort-btn" data-sort="role">Роль ⇅</button></th>
-              <th><button type="button" class="sort-btn" data-sort="status">Статус ⇅</button></th>
-              <th><button type="button" class="sort-btn" data-sort="last_login">Останній вхід ⇅</button></th>
-              <th><button type="button" class="sort-btn" data-sort="created_at">Створений ⇅</button></th>
-              <th>Дії</th>
-            </tr>
-          </thead>
-          <tbody id="usersBody">
-            <tr><td colspan="7" class="table-empty">Завантаження...</td></tr>
-          </tbody>
-        </table>
-        <div class="table-footer">
-          <div>
-            <span id="usersSummary">Показано: 0 користувачів</span>
-            <div id="usersStatus" class="status compact-status"></div>
-          </div>
-          <div id="usersPagination" class="pagination"></div>
+      <section class="panel table-panel">
+        <div id="notice"></div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th class="sortable" data-sort="marker">Маркер ⇅</th>
+                <th class="sortable" data-sort="email">Email ⇅</th>
+                <th class="sortable" data-sort="role">Роль ⇅</th>
+                <th class="sortable" data-sort="status">Статус ⇅</th>
+                <th class="sortable" data-sort="last_login">Останній вхід ⇅</th>
+                <th class="sortable" data-sort="created_at">Створений ⇅</th>
+                <th>Дії</th>
+              </tr>
+            </thead>
+            <tbody id="usersBody"><tr><td colspan="7">Завантаження...</td></tr></tbody>
+          </table>
+        </div>
+        <div class="footer-row">
+          <div id="shownCount" class="muted">Показано: 0 користувачів</div>
+          <div class="pagination"><button id="prevPage" class="page-btn">‹</button><button id="pageNo" class="page-btn active">1</button><button id="nextPage" class="page-btn">›</button></div>
         </div>
       </section>
     </main>
   </div>
 
   <script>
-    window.addEventListener('DOMContentLoaded', () => window.initUsersPage && window.initUsersPage());
+    window.addEventListener('DOMContentLoaded', async () => {
+      const { supabase } = window.rebusAuth;
+      const A = window.rebusAdmin;
+      const ctx = await A.getAdminContext(); if (!ctx) return;
+      A.renderAdminProfile(document.getElementById('adminEmail'), ctx.session, ctx.admin);
+
+      const state = { users: [], filter:'all', query:'', sort:'marker', dir:1, page:1, pageSize:8, profilesAvailable:true };
+      const usersBody = document.getElementById('usersBody');
+      const notice = document.getElementById('notice');
+
+      function setNotice(text, type='') { notice.innerHTML = text ? `<div class="notice ${type}">${A.esc(text)}</div>` : ''; }
+
+      async function loadUsers(){
+        usersBody.innerHTML = '<tr><td colspan="7">Завантаження...</td></tr>';
+        setNotice('');
+        let rows = [];
+        let source = 'profiles';
+        const profileResp = await supabase.from('rebus_profiles').select('*').order('created_at', { ascending:false });
+        if (!profileResp.error) {
+          rows = profileResp.data || [];
+        } else {
+          state.profilesAvailable = false;
+          source = 'admin_access';
+          const adminResp = await supabase.from('rebus_admin_access').select('*').order('created_at', { ascending:false });
+          if (adminResp.error) {
+            usersBody.innerHTML = `<tr><td colspan="7">Помилка завантаження: ${A.esc(adminResp.error.message)}</td></tr>`;
+            setNotice(`rebus_profiles недоступна (${profileResp.error.message}). rebus_admin_access також не читається (${adminResp.error.message}).`, 'error');
+            return;
+          }
+          rows = adminResp.data || [];
+          setNotice(`Увага: rebus_profiles недоступна (${profileResp.error.message}). Показано резервні дані з rebus_admin_access.`, '');
+        }
+        state.users = rows.map(r => A.mapUser({...r, source}));
+        render();
+      }
+
+      function filtered(){
+        let list = [...state.users];
+        if (state.filter !== 'all') list = list.filter(u => u.status === state.filter);
+        const q = state.query.trim().toLowerCase();
+        if (q) list = list.filter(u => [u.marker,u.email,u.full_name,A.roleLabel(u.role),u.status].join(' ').toLowerCase().includes(q));
+        list.sort((a,b) => {
+          const av = a[state.sort] || '';
+          const bv = b[state.sort] || '';
+          return String(av).localeCompare(String(bv), 'uk', { numeric:true }) * state.dir;
+        });
+        return list;
+      }
+
+      function updateCounts(){
+        document.getElementById('countAll').textContent = state.users.length;
+        document.getElementById('countActive').textContent = state.users.filter(u=>u.status==='active').length;
+        document.getElementById('countInactive').textContent = state.users.filter(u=>u.status==='inactive').length;
+        document.getElementById('countDeleted').textContent = state.users.filter(u=>u.status==='deleted').length;
+      }
+
+      function render(){
+        updateCounts();
+        const list = filtered();
+        const totalPages = Math.max(1, Math.ceil(list.length / state.pageSize));
+        state.page = Math.min(state.page, totalPages);
+        const pageItems = list.slice((state.page-1)*state.pageSize, state.page*state.pageSize);
+        usersBody.innerHTML = pageItems.length ? pageItems.map(userRow).join('') : '<tr><td colspan="7">Користувачів не знайдено</td></tr>';
+        document.getElementById('shownCount').textContent = `Показано: ${pageItems.length ? ((state.page-1)*state.pageSize+1) : 0}-${Math.min(state.page*state.pageSize, list.length)} із ${list.length} користувачів`;
+        document.getElementById('pageNo').textContent = state.page;
+        document.getElementById('prevPage').disabled = state.page <= 1;
+        document.getElementById('nextPage').disabled = state.page >= totalPages;
+      }
+
+      function userRow(u){
+        const avatar = u.avatar_url ? `<img class="mini-avatar" src="${A.esc(u.avatar_url)}" alt="">` : `<div class="mini-avatar">${A.esc(A.initials(u.full_name,u.email))}</div>`;
+        return `<tr data-id="${A.esc(u.id)}">
+          <td>${A.esc(u.marker)}</td>
+          <td><div class="user-cell">${avatar}<div><div class="email-main">${A.esc(u.email)}</div><div class="email-sub">${A.esc(u.full_name || u.email)}</div></div></div></td>
+          <td><span class="role-badge role-${A.esc(u.role)}">${A.esc(A.roleLabel(u.role))}</span></td>
+          <td><span class="status-badge status-${A.esc(u.status)}">${A.esc(A.statusLabel(u.status))}</span></td>
+          <td>${A.esc(A.fmtDate(u.last_login))}</td>
+          <td>${A.esc(A.fmtDate(u.created_at))}</td>
+          <td>${actionsMenu(u)}</td>
+        </tr>`;
+      }
+
+      function actionsMenu(u){
+        return `<div class="action-wrap">
+          <button class="dots-btn" data-menu="${A.esc(u.id)}" type="button">⋮</button>
+          <div class="action-menu" id="menu-${CSS.escape(String(u.id))}">
+            <button data-action="status" data-value="active" data-id="${A.esc(u.id)}">● Активувати</button>
+            <button data-action="status" data-value="inactive" data-id="${A.esc(u.id)}">● Деактивувати</button>
+            <button data-action="role" data-value="admin" data-id="${A.esc(u.id)}">👑 Зробити адміністратором</button>
+            <button data-action="role" data-value="user" data-id="${A.esc(u.id)}">👤 Зробити користувачем</button>
+            <button class="danger" data-action="status" data-value="deleted" data-id="${A.esc(u.id)}">🗑️ Видалити</button>
+          </div>
+        </div>`;
+      }
+
+      async function updateUser(id, patch){
+        const u = state.users.find(x => String(x.id) === String(id));
+        if (!u) return;
+        const byEmail = u.email;
+        const statusPatch = patch.status ? { status: patch.status, is_active: patch.status === 'active' } : {};
+        const rolePatch = patch.role ? { role: patch.role } : {};
+        const dbPatch = {...statusPatch, ...rolePatch, updated_at: new Date().toISOString()};
+        setNotice('Застосовую зміни...', '');
+        let ok = false, lastError = null;
+        if (state.profilesAvailable) {
+          const { error } = await supabase.from('rebus_profiles').update(dbPatch).eq('email', byEmail);
+          if (!error) ok = true; else lastError = error;
+        }
+        const adminPatch = {...dbPatch};
+        if (patch.status) adminPatch.is_active = patch.status === 'active';
+        const adminUpdate = await supabase.from('rebus_admin_access').update(adminPatch).eq('email', byEmail);
+        if (!adminUpdate.error) ok = true; else lastError = adminUpdate.error;
+        if (!ok) { setNotice(lastError?.message || 'Не вдалося оновити користувача.', 'error'); return; }
+        await A.logEvent(supabase, { marker:u.marker, email:u.email, action: patch.role ? `Змінено роль: ${patch.role}` : `Змінено статус: ${patch.status}`, status:'success' });
+        if (patch.role) u.role = patch.role;
+        if (patch.status) u.status = patch.status;
+        setNotice('Зміни збережено.', 'ok');
+        render();
+      }
+
+      document.getElementById('searchInput').addEventListener('input', e => { state.query = e.target.value; state.page=1; render(); });
+      document.querySelectorAll('.filter-btn').forEach(btn => btn.addEventListener('click', () => { document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); state.filter=btn.dataset.filter; state.page=1; render(); }));
+      document.querySelectorAll('th.sortable').forEach(th => th.addEventListener('click', () => { const s=th.dataset.sort; state.dir = state.sort === s ? state.dir * -1 : 1; state.sort=s; render(); }));
+      document.getElementById('prevPage').onclick = () => { state.page=Math.max(1,state.page-1); render(); };
+      document.getElementById('nextPage').onclick = () => { state.page+=1; render(); };
+      document.addEventListener('click', e => {
+        const menuBtn = e.target.closest('[data-menu]');
+        document.querySelectorAll('.action-menu').forEach(m => { if (!menuBtn || m.id !== `menu-${CSS.escape(String(menuBtn.dataset.menu))}`) m.classList.remove('open'); });
+        if (menuBtn) { document.getElementById(`menu-${CSS.escape(String(menuBtn.dataset.menu))}`)?.classList.toggle('open'); return; }
+        const action = e.target.closest('[data-action]');
+        if (action) updateUser(action.dataset.id, { [action.dataset.action]: action.dataset.value });
+      });
+      loadUsers();
+    });
   </script>
   <script src="js/logout.js" defer></script>
 </body>
