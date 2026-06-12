@@ -4,10 +4,10 @@
   <title>REBUS — Надати доступ</title>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="icon" type="image/png" href="assets/favicon.png?v=20260612-nq-actions" />
-  <link rel="shortcut icon" type="image/png" href="assets/favicon.png?v=20260612-nq-actions" />
-  <link rel="apple-touch-icon" href="assets/favicon.png?v=20260612-nq-actions" />
-  <link rel="stylesheet" href="css/styles.css?v=20260612-users-actions" />
+  <link rel="icon" type="image/png" href="assets/favicon.png?v=20260612-nq-access-v2" />
+  <link rel="shortcut icon" type="image/png" href="assets/favicon.png?v=20260612-nq-access-v2" />
+  <link rel="apple-touch-icon" href="assets/favicon.png?v=20260612-nq-access-v2" />
+  <link rel="stylesheet" href="css/styles.css?v=20260612-access-v2" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/config.js"></script>
   <script src="js/auth.js" defer></script>
@@ -24,7 +24,21 @@
       <div class="topbar"><h2>Надати доступ</h2><div class="user-pill" id="adminEmail"></div></div>
 
       <section class="panel">
-        <div class="panel-header"><h3>Запити на доступ</h3><button id="reloadRequests" class="small-btn">Оновити</button></div>
+        <div class="panel-header">
+          <h3>Запити на доступ</h3>
+          <button id="reloadRequests" class="small-btn">Оновити</button>
+        </div>
+        <div class="form-card-body compact">
+          <div class="search-row">
+            <div class="search-box"><input id="requestSearch" class="search-input" placeholder="Пошук по email, імені або повідомленню..."></div>
+          </div>
+          <div class="filter-row access-filters">
+            <button class="filter-btn active" data-request-filter="pending">Нові <span class="count-pill" id="reqPending">0</span></button>
+            <button class="filter-btn" data-request-filter="approved">Схвалені <span class="count-pill" id="reqApproved">0</span></button>
+            <button class="filter-btn" data-request-filter="denied">Відхилені <span class="count-pill" id="reqDenied">0</span></button>
+            <button class="filter-btn" data-request-filter="all">Всі <span class="count-pill" id="reqAll">0</span></button>
+          </div>
+        </div>
         <div id="requestsNotice"></div>
         <div class="form-card-body"><div id="requestsList" class="requests-grid"><div class="muted">Завантаження...</div></div></div>
       </section>
@@ -59,38 +73,96 @@
 
   <script>
     window.addEventListener('DOMContentLoaded', async () => {
-      const { supabase, setStatus } = window.rebusAuth; const A = window.rebusAdmin;
+      const { supabase, setStatus } = window.rebusAuth;
+      const A = window.rebusAdmin;
       const ctx = await A.getAdminContext(); if(!ctx)return;
       A.renderAdminProfile(document.getElementById('adminEmail'), ctx.session, ctx.admin);
+
       const requestsList = document.getElementById('requestsList');
       const requestsNotice = document.getElementById('requestsNotice');
+      const requestSearch = document.getElementById('requestSearch');
+      const state = { requests: [], filter: 'pending', query: '' };
       let selectedRequest = null;
-      function notice(text,type=''){ requestsNotice.innerHTML = text ? `<div class="notice ${type}">${A.esc(text)}</div>` : ''; }
+
+      function notice(text,type=''){
+        requestsNotice.innerHTML = text ? `<div class="notice ${type}">${A.esc(text)}</div>` : '';
+      }
+      function reqStatus(r){ return String(r?.status || 'pending').toLowerCase(); }
+      function reqStatusLabel(s){ return {pending:'Очікує', approved:'Схвалено', denied:'Відхилено'}[s] || 'Очікує'; }
+      function updateRequestCounts(){
+        const all = state.requests;
+        document.getElementById('reqAll').textContent = all.length;
+        document.getElementById('reqPending').textContent = all.filter(r=>reqStatus(r)==='pending').length;
+        document.getElementById('reqApproved').textContent = all.filter(r=>reqStatus(r)==='approved').length;
+        document.getElementById('reqDenied').textContent = all.filter(r=>reqStatus(r)==='denied').length;
+      }
+      function filteredRequests(){
+        const q = state.query.trim().toLowerCase();
+        return state.requests.filter(r => {
+          const s = reqStatus(r);
+          if(state.filter !== 'all' && s !== state.filter) return false;
+          if(!q) return true;
+          return [r.email, r.full_name, r.name, r.message].some(v => String(v||'').toLowerCase().includes(q));
+        });
+      }
+      function renderRequests(){
+        updateRequestCounts();
+        const list = filteredRequests();
+        if(!list.length){ requestsList.innerHTML = `<div class="muted">${state.filter === 'pending' ? 'Нових запитів немає' : 'Запитів не знайдено'}</div>`; return; }
+        requestsList.innerHTML = list.map(r => {
+          const s = reqStatus(r);
+          const actionHtml = s === 'pending'
+            ? `<button class="small-btn primary" data-approve="${A.esc(r.id)}">Схвалити</button><button class="small-btn danger" data-deny="${A.esc(r.id)}">Відхилити</button>`
+            : `<span class="status-badge status-${s === 'approved' ? 'active' : 'deleted'}">${A.esc(reqStatusLabel(s))}</span>`;
+          return `<div class="request-card" data-id="${A.esc(r.id)}">
+            <div>
+              <div class="email-main">${A.esc(r.email || '—')}</div>
+              <div class="request-meta">${A.esc(r.full_name || r.name || 'Без імені')} · ${A.esc(A.fmtDate(r.created_at))}</div>
+              <div class="request-meta">${A.esc(r.message || 'Повідомлення відсутнє')}</div>
+            </div>
+            <div class="request-actions">${actionHtml}</div>
+          </div>`;
+        }).join('');
+      }
 
       async function grantAccess(payload){
-        const base = { email: payload.email, marker: payload.marker, full_name: payload.full_name || null, role: payload.role || 'user', status:'active', is_active:true, updated_at:new Date().toISOString() };
+        const now = new Date().toISOString();
+        const base = {
+          email: payload.email,
+          marker: payload.marker,
+          full_name: payload.full_name || null,
+          role: payload.role || 'user',
+          status: 'active',
+          is_active: true,
+          updated_at: now
+        };
         let ok = false, lastError = null;
-        const profilePayload = { ...base, created_at:new Date().toISOString() };
+        const profilePayload = { ...base, created_at: now };
         const prof = await supabase.from('rebus_profiles').upsert(profilePayload, { onConflict:'email' });
         if(!prof.error) ok = true; else lastError = prof.error;
-        const adminPayload = { email:base.email, marker:base.marker, role:base.role, is_active:true, mfa_required:true, created_at:new Date().toISOString(), updated_at:new Date().toISOString() };
+
+        const adminPayload = { email:base.email, marker:base.marker, role:base.role, is_active:true, mfa_required:true, created_at:now, updated_at:now };
         const admin = await supabase.from('rebus_admin_access').upsert(adminPayload, { onConflict:'email' });
         if(!admin.error) ok = true; else lastError = admin.error;
         if(!ok) throw lastError || new Error('Не вдалося створити доступ.');
-        await A.logEvent(supabase, { marker:base.marker, email:base.email, action:`Надано доступ (${base.role})`, status:'success' });
+        await A.logEvent(supabase, { marker:base.marker, email:base.email, action:`Надано доступ (${A.roleLabel(base.role)})`, status:'success' });
       }
 
       async function loadRequests(){
         requestsList.innerHTML = '<div class="muted">Завантаження...</div>'; notice('');
         const { data, error } = await supabase.from('access_requests').select('*').order('created_at',{ascending:false});
-        if(error){ requestsList.innerHTML='<div class="muted">Запити недоступні</div>'; notice(`access_requests недоступна (${error.message}). Ручне надання доступу нижче працює окремо.`, ''); return; }
-        const pending = (data||[]).filter(r => !r.status || r.status === 'pending');
-        requestsList.innerHTML = pending.length ? pending.map(r => `<div class="request-card" data-id="${A.esc(r.id)}"><div><div class="email-main">${A.esc(r.email||'—')}</div><div class="request-meta">${A.esc(r.full_name||r.name||'Без імені')} · ${A.esc(A.fmtDate(r.created_at))}</div><div class="request-meta">${A.esc(r.message||'Повідомлення відсутнє')}</div></div><div class="request-actions"><button class="small-btn primary" data-approve="${A.esc(r.id)}">Схвалити</button><button class="small-btn danger" data-deny="${A.esc(r.id)}">Відхилити</button></div></div>`).join('') : '<div class="muted">Нових запитів немає</div>';
-        window.__requests = pending;
+        if(error){
+          state.requests = [];
+          renderRequests();
+          notice(`access_requests недоступна (${error.message}). Ручне надання доступу нижче працює окремо.`, '');
+          return;
+        }
+        state.requests = data || [];
+        renderRequests();
       }
 
       function openApprove(id){
-        selectedRequest = (window.__requests||[]).find(r => String(r.id) === String(id)); if(!selectedRequest)return;
+        selectedRequest = state.requests.find(r => String(r.id) === String(id)); if(!selectedRequest)return;
         document.getElementById('modalEmail').textContent = selectedRequest.email || '';
         document.getElementById('modalMarker').value = selectedRequest.marker || '';
         document.getElementById('modalRole').value = selectedRequest.role || 'user';
@@ -110,12 +182,29 @@
         if(!selectedRequest)return;
         const payload = { email:selectedRequest.email, full_name:selectedRequest.full_name || selectedRequest.name, marker:document.getElementById('modalMarker').value.trim(), role:document.getElementById('modalRole').value };
         if(!payload.marker){ alert('Потрібен маркер.'); return; }
-        try { await grantAccess(payload); await supabase.from('access_requests').update({status:'approved', updated_at:new Date().toISOString()}).eq('id', selectedRequest.id); closeApprove(); loadRequests(); }
-        catch(e){ alert(e?.message || 'Не вдалося схвалити запит.'); }
+        try {
+          await grantAccess(payload);
+          await supabase.from('access_requests').update({status:'approved', marker: payload.marker, role: payload.role, updated_at:new Date().toISOString()}).eq('id', selectedRequest.id);
+          await A.logEvent(supabase,{marker:payload.marker,email:payload.email,action:'Схвалено запит на доступ',status:'success'});
+          closeApprove(); loadRequests();
+        } catch(e){ alert(e?.message || 'Не вдалося схвалити запит.'); }
       };
+      requestSearch.addEventListener('input', e => { state.query = e.target.value; renderRequests(); });
+      document.querySelectorAll('[data-request-filter]').forEach(btn => btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-request-filter]').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        state.filter = btn.dataset.requestFilter;
+        renderRequests();
+      }));
       document.addEventListener('click', async e => {
         const approve = e.target.closest('[data-approve]'); if(approve){ openApprove(approve.dataset.approve); return; }
-        const deny = e.target.closest('[data-deny]'); if(deny){ await supabase.from('access_requests').update({status:'denied', updated_at:new Date().toISOString()}).eq('id', deny.dataset.deny); await A.logEvent(supabase,{email:'—',action:'Відхилено запит на доступ',status:'success'}); loadRequests(); }
+        const deny = e.target.closest('[data-deny]');
+        if(deny){
+          const r = state.requests.find(x => String(x.id) === String(deny.dataset.deny));
+          await supabase.from('access_requests').update({status:'denied', updated_at:new Date().toISOString()}).eq('id', deny.dataset.deny);
+          await A.logEvent(supabase,{email:r?.email || '—',marker:r?.marker || '—',action:'Відхилено запит на доступ',status:'success'});
+          loadRequests();
+        }
       });
       loadRequests();
     });
