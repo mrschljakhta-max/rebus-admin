@@ -9,9 +9,9 @@
   <script src="js/config.js"></script>
   <script src="js/auth.js" defer></script>
 </head>
-<body class="bg-page bg-2fa twofa-page">
-  <main class="auth-card twofa-card">
-    <div class="brand twofa-brand">
+<body class="bg-page bg-2fa setup-page">
+  <main class="auth-card setup-card compact-2fa-card">
+    <div class="brand setup-brand">
       <img src="assets/key.png" alt="REBUS" />
       <h1>REBUS <span>2FA</span></h1>
     </div>
@@ -20,13 +20,21 @@
       <span class="qr-loading">Генерую QR...</span>
     </div>
 
-    <div class="stack twofa-stack">
-      <input id="codeInput" class="input twofa-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" />
+    <input
+      id="codeInput"
+      class="input code-input"
+      inputmode="numeric"
+      autocomplete="one-time-code"
+      maxlength="6"
+      placeholder="000000"
+    />
+
+    <div class="stack compact-actions">
       <button id="verifyBtn" class="btn">Активувати захист</button>
       <button id="logoutBtn" class="btn secondary">Скасувати</button>
     </div>
 
-    <div id="status" class="status twofa-status"></div>
+    <div id="status" class="status setup-status"></div>
   </main>
 
   <script>
@@ -35,90 +43,91 @@
 
     const friendlyName = 'REBUS Admin';
 
-    function normalizeMfaError(message) {
+    function normalizeError(message) {
       const text = String(message || '').toLowerCase();
       if (text.includes('already exists')) {
-        return 'Попередній QR-код уже був створений. Оновлюю налаштування...';
+        return 'Попередній QR-код вже був створений. Оновлюю налаштування...';
       }
-      if (text.includes('expired')) return 'Код застарів. Спробуйте ще раз.';
-      if (text.includes('invalid')) return 'Код неправильний або застарів.';
-      return 'Не вдалося виконати дію. Спробуйте ще раз.';
+      if (text.includes('invalid') || text.includes('verify')) {
+        return 'Код неправильний або застарів.';
+      }
+      return message || 'Сталася помилка.';
     }
 
-    async function removeOldUnverifiedFactors(supabase) {
-      const { data } = await supabase.auth.mfa.listFactors();
-      const all = [
-        ...(data?.totp || []),
-        ...(data?.all || [])
-      ];
+    function renderQr(qr) {
+      const box = document.getElementById('qrBox');
+      if (!qr) {
+        box.innerHTML = '<span class="qr-loading">QR-код не отримано</span>';
+        return;
+      }
 
-      const unique = new Map();
-      all.forEach((factor) => {
-        if (factor?.id) unique.set(factor.id, factor);
-      });
-
-      for (const factor of unique.values()) {
-        const sameName = factor.friendly_name === friendlyName || factor.friendlyName === friendlyName;
-        if (factor.factor_type === 'totp' && factor.status !== 'verified' && sameName) {
-          await supabase.auth.mfa.unenroll({ factorId: factor.id });
+      if (String(qr).trim().startsWith('<svg')) {
+        box.innerHTML = qr;
+        const svg = box.querySelector('svg');
+        if (svg) {
+          svg.setAttribute('aria-label', 'QR code');
+          svg.removeAttribute('width');
+          svg.removeAttribute('height');
         }
+        return;
       }
+
+      box.innerHTML = `<img src="${qr}" alt="QR code" />`;
     }
 
-    async function enrollFactor(supabase, setStatus) {
-      setStatus('Створюю QR-код...');
+    async function removeOldUnverifiedTotp(supabase) {
+      const { data } = await supabase.auth.mfa.listFactors();
+      const factors = data?.totp || [];
+      const verified = factors.filter((f) => f.status === 'verified');
+      if (verified.length) return { hasVerified: true };
 
-      let result = await supabase.auth.mfa.enroll({
+      const old = factors.filter((f) => f.status !== 'verified');
+      for (const factor of old) {
+        try {
+          await supabase.auth.mfa.unenroll({ factorId: factor.id });
+        } catch (_) {}
+      }
+      return { hasVerified: false };
+    }
+
+    async function createFreshFactor(supabase, setStatus) {
+      const cleanup = await removeOldUnverifiedTotp(supabase);
+      if (cleanup.hasVerified) {
+        location.href = 'verify-2fa.html';
+        return null;
+      }
+
+      setStatus('');
+      const { data: enrollData, error: enrollError } = await supabase.auth.mfa.enroll({
         factorType: 'totp',
         friendlyName
       });
 
-      if (result.error && String(result.error.message || '').toLowerCase().includes('already exists')) {
-        setStatus('Оновлюю попередній QR-код...');
-        await removeOldUnverifiedFactors(supabase);
-        result = await supabase.auth.mfa.enroll({
-          factorType: 'totp',
-          friendlyName
-        });
+      if (enrollError) {
+        setStatus(normalizeError(enrollError.message), 'error');
+        return null;
       }
 
-      return result;
+      return enrollData;
     }
 
     window.addEventListener('DOMContentLoaded', async () => {
-      const { supabase, requireAdmin, setStatus, getAuthenticatorFactors } = window.rebusAuth;
+      const { supabase, requireAdmin, setStatus } = window.rebusAuth;
       const ctx = await requireAdmin();
       if (!ctx) return;
 
-      const verifiedFactors = await getAuthenticatorFactors();
-      if (verifiedFactors.length) {
-        location.href = 'verify-2fa.html';
-        return;
-      }
-
-      const { data: enrollData, error: enrollError } = await enrollFactor(supabase, setStatus);
-      if (enrollError) {
-        setStatus(normalizeMfaError(enrollError.message), 'error');
-        return;
-      }
+      const enrollData = await createFreshFactor(supabase, setStatus);
+      if (!enrollData) return;
 
       factorId = enrollData.id;
-      const qr = enrollData?.totp?.qr_code;
-      if (!qr) {
-        setStatus('Не вдалося отримати QR-код. Оновіть сторінку.', 'error');
-        return;
-      }
-
-      document.getElementById('qrBox').innerHTML = `<img src="${qr}" alt="QR code" />`;
+      renderQr(enrollData.totp?.qr_code);
 
       const { data: chData, error: chError } = await supabase.auth.mfa.challenge({ factorId });
       if (chError) {
-        setStatus(normalizeMfaError(chError.message), 'error');
+        setStatus(normalizeError(chError.message), 'error');
         return;
       }
-
       challengeId = chData.id;
-      setStatus('Введіть 6-значний код із застосунку.');
 
       document.getElementById('verifyBtn').addEventListener('click', async () => {
         const code = document.getElementById('codeInput').value.trim();
@@ -130,11 +139,11 @@
         setStatus('Перевіряю код...');
         const { error } = await supabase.auth.mfa.verify({ factorId, challengeId, code });
         if (error) {
-          setStatus('Код неправильний або застарів.', 'error');
+          setStatus(normalizeError(error.message), 'error');
           return;
         }
 
-        setStatus('2FA активовано.', 'ok');
+        setStatus('Захист активовано.', 'ok');
         setTimeout(() => location.href = 'dashboard.html', 650);
       });
 

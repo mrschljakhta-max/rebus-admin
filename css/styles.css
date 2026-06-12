@@ -116,87 +116,83 @@ body{
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.field label{display:block;color:var(--muted);font-size:13px;margin:0 0 7px}.field input,.field select{width:100%;min-height:44px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.32);color:#fff;padding:0 12px}.actions{display:flex;gap:12px;margin-top:16px}.actions .btn{width:auto;padding:0 18px}
 @media(max-width:900px){.app-shell{grid-template-columns:1fr}.sidebar{display:none}.cards{grid-template-columns:1fr 1fr}.bg-page{justify-content:center;padding:22px}.bg-page::after{background:rgba(0,0,0,.6)}}
 
-
-/* REBUS 2FA redesigned screen */
-.twofa-page{
+/* REBUS 2FA compact left layout */
+.bg-page.setup-page{
   justify-content:flex-start;
-  padding-left:6.5vw;
-  padding-right:5vw;
+  padding:40px 0 40px clamp(72px, 11vw, 150px);
   background-position:center center;
 }
-.twofa-page::after{
-  background:linear-gradient(90deg,rgba(0,0,0,.04),rgba(0,0,0,.10) 38%,rgba(0,0,0,.50) 74%,rgba(0,0,0,.86));
+.bg-page.setup-page::after{
+  background:linear-gradient(90deg,rgba(0,0,0,.18),rgba(0,0,0,.05) 44%,rgba(0,0,0,.22) 100%);
 }
-.twofa-card{
-  width:520px;
-  max-width:520px;
-  padding:34px;
-  border-radius:26px;
-  background:linear-gradient(180deg,rgba(13,14,17,.88),rgba(7,8,10,.90));
-  box-shadow:0 28px 90px rgba(0,0,0,.58);
+.setup-card.compact-2fa-card{
+  width:390px;
+  max-width:390px;
+  padding:28px;
+  border-radius:22px;
+  background:linear-gradient(180deg,rgba(17,18,21,.80),rgba(7,8,10,.86));
+  box-shadow:0 22px 70px rgba(0,0,0,.55);
 }
-.twofa-brand{
+.setup-brand{
   justify-content:center;
-  margin-bottom:30px;
+  margin-bottom:24px;
+  gap:14px;
 }
-.twofa-brand img{
-  width:56px;
-  height:56px;
+.setup-brand img{
+  width:52px;
+  height:52px;
 }
-.twofa-brand h1{
-  font-size:34px;
+.setup-brand h1{
+  font-size:30px;
 }
-.qr-box-large{
-  width:320px;
-  height:320px;
-  margin:0 auto 26px;
-  padding:16px;
-  border-radius:18px;
-  background:#f7f7f8;
-  border:1px solid rgba(255,255,255,.30);
-  box-shadow:0 18px 50px rgba(0,0,0,.40);
+.setup-brand h1 span{
+  font-size:.62em;
+  margin-left:8px;
 }
-.qr-box-large img{
-  width:286px;
-  height:286px;
+.qr-box.qr-box-large{
+  width:260px;
+  height:260px;
+  margin:0 auto 20px;
+  padding:12px;
+  border-radius:16px;
+  background:#f6f6f4;
+  border:0;
+  overflow:hidden;
+}
+.qr-box.qr-box-large img,
+.qr-box.qr-box-large svg{
+  width:236px !important;
+  height:236px !important;
   display:block;
 }
 .qr-loading{
-  color:#1b1b1d;
-  font-weight:800;
-  letter-spacing:.01em;
+  color:#1a1a1c;
+  font-weight:700;
 }
-.twofa-stack{
-  gap:14px;
+.code-input{
+  min-height:46px;
+  margin-bottom:12px;
+  font-size:17px;
+  letter-spacing:.16em;
 }
-.twofa-code{
-  min-height:54px;
-  font-size:18px;
-  font-weight:800;
-  letter-spacing:.18em;
+.compact-actions{
+  gap:12px;
 }
-.twofa-status{
-  margin-top:18px;
-  min-height:22px;
+.compact-actions .btn{
+  min-height:48px;
+}
+.setup-status{
+  min-height:20px;
+  margin-top:14px;
   text-align:center;
+  font-size:13px;
 }
 @media(max-width:900px){
-  .twofa-page{
+  .bg-page.setup-page{
     justify-content:center;
-    padding:22px;
+    padding:24px;
   }
-  .twofa-card{
-    width:min(430px,92vw);
-    max-width:92vw;
-    padding:28px;
-  }
-  .qr-box-large{
-    width:min(300px,100%);
-    height:auto;
-    aspect-ratio:1/1;
-  }
-  .qr-box-large img{
-    width:100%;
-    height:100%;
+  .setup-card.compact-2fa-card{
+    width:min(390px,92vw);
   }
 }
