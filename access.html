@@ -7,7 +7,7 @@
   <link rel="icon" type="image/png" href="assets/favicon.png?v=20260612-nq-access-workflow-v3" />
   <link rel="shortcut icon" type="image/png" href="assets/favicon.png?v=20260612-nq-access-workflow-v3" />
   <link rel="apple-touch-icon" href="assets/favicon.png?v=20260612-nq-access-workflow-v3" />
-  <link rel="stylesheet" href="css/styles.css?v=20260612-access-workflow-v3" />
+  <link rel="stylesheet" href="css/styles.css?v=20260620-edge-direct-v1" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/config.js"></script>
   <script src="js/auth.js" defer></script>
@@ -148,17 +148,44 @@
       }
 
       async function grantAccess(payload){
-        const { data, error } = await supabase.functions.invoke('send-rebus-invite', {
-          body: {
+        const cfg = window.REBUS_CONFIG || {};
+        const endpoint = `${cfg.SUPABASE_URL}/functions/v1/send-rebus-invite`;
+
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) throw sessionError;
+
+        const token = sessionData?.session?.access_token;
+        if (!token) throw new Error('Немає активної сесії адміністратора. Увійди в адмінку ще раз.');
+
+        console.info('[REBUS Admin] Calling Edge Function:', endpoint, payload);
+
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'apikey': cfg.SUPABASE_ANON_KEY,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
             email: payload.email,
             marker: payload.marker,
             full_name: payload.full_name || null,
             role: payload.role || 'user',
             access_request_id: payload.access_request_id || null
-          }
+          })
         });
-        if (error) throw error;
-        if (data?.error) throw new Error(data.error);
+
+        const raw = await response.text();
+        let data = {};
+        try { data = raw ? JSON.parse(raw) : {}; }
+        catch { data = { error: raw || 'Некоректна відповідь Edge Function.' }; }
+
+        console.info('[REBUS Admin] Edge Function response:', response.status, data);
+
+        if (!response.ok || data?.error) {
+          throw new Error(data?.error || `Edge Function повернула помилку ${response.status}`);
+        }
+
         return data;
       }
 
@@ -187,7 +214,7 @@
       document.getElementById('createBtn').onclick = async () => {
         const payload = { email:email.value.trim(), marker:marker.value.trim(), full_name:fullName.value.trim(), role:role.value };
         if(!payload.email || !payload.marker){ setStatus('Email і маркер обов’язкові.', 'error'); return; }
-        try { setStatus('Створюю доступ і надсилаю лист...'); await grantAccess(payload); setStatus('Доступ надано, лист-запрошення відправлено.', 'ok'); email.value=''; marker.value=''; fullName.value=''; role.value='user'; }
+        try { setStatus('Створюю доступ і надсилаю лист...'); await grantAccess(payload); setStatus('Доступ надано, лист-запрошення відправлено через Edge Function.', 'ok'); email.value=''; marker.value=''; fullName.value=''; role.value='user'; }
         catch(e){ setStatus(e?.message || 'Помилка створення доступу.', 'error'); }
       };
       document.getElementById('reloadRequests').onclick = loadRequests;
