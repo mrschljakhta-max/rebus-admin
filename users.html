@@ -22,9 +22,14 @@
     }
     .role-choice-card{
       position:relative!important;
-      overflow:visible!important;
-      min-height:102px!important;
-      padding-right:132px!important;
+      overflow:hidden!important;
+      min-height:112px!important;
+      padding:26px 22px!important;
+      gap:16px!important;
+    }
+    .role-choice-card.current-role{
+      padding-top:56px!important;
+      padding-right:22px!important;
     }
     .role-choice-card.current-role{
       border-color:#ff5b87!important;
@@ -33,24 +38,26 @@
     }
     .current-role-badge{
       position:absolute!important;
-      top:14px!important;
-      right:14px!important;
-      left:auto!important;
+      top:16px!important;
+      left:22px!important;
+      right:auto!important;
       transform:none!important;
-      max-width:none!important;
+      max-width:calc(100% - 44px)!important;
       white-space:nowrap!important;
-      overflow:visible!important;
-      padding:6px 9px!important;
+      overflow:hidden!important;
+      text-overflow:ellipsis!important;
+      padding:7px 11px!important;
       border-radius:999px!important;
       background:rgba(255,91,135,.20)!important;
       border:1px solid rgba(255,91,135,.58)!important;
-      color:#ff9fbc!important;
+      color:#ffb4c9!important;
       font-weight:900!important;
       font-size:10px!important;
       line-height:1!important;
       text-transform:uppercase!important;
       letter-spacing:.045em!important;
       z-index:4!important;
+      box-sizing:border-box!important;
     }
     .role-choice-icon{
       width:44px!important;
@@ -70,11 +77,12 @@
     }
     .status-toggle-layout{
       display:grid!important;
-      grid-template-columns:1.35fr .85fr!important;
-      gap:16px!important;
-      padding:22px 28px 28px!important;
+      grid-template-columns:1.25fr .9fr!important;
+      gap:24px!important;
+      padding:30px 32px 34px!important;
       box-sizing:border-box!important;
       overflow:visible!important;
+      align-items:stretch!important;
     }
     .status-toggle-card{
       border:1px solid rgba(255,255,255,.12)!important;
@@ -87,8 +95,15 @@
       text-align:left!important;
       color:#fff!important;
       cursor:pointer!important;
-      min-height:96px!important;
+      min-height:108px!important;
       box-sizing:border-box!important;
+    }
+    .status-toggle-card > div,
+    .delete-user-tile > div{
+      display:flex!important;
+      flex-direction:column!important;
+      gap:7px!important;
+      min-width:0!important;
     }
     .status-toggle-card strong,
     .delete-user-tile strong{
@@ -136,12 +151,14 @@
     }
     .status-toggle-card.is-active .status-toggle-switch span{left:28px!important}
     .delete-user-tile{
-      min-height:96px!important;
+      min-height:108px!important;
       box-sizing:border-box!important;
+      gap:18px!important;
     }
     @media(max-width:860px){
       .role-picker-grid,.status-toggle-layout{grid-template-columns:1fr!important}
-      .role-choice-card{padding-right:20px!important;padding-top:54px!important}
+      .role-choice-card{padding:22px!important}
+      .role-choice-card.current-role{padding-top:56px!important}
     }
   </style>
 </head>
