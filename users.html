@@ -75,11 +75,7 @@
   <div id="userActionModal" class="modal-backdrop rebus-action-modal" hidden>
     <div class="modal action-dialog" role="dialog" aria-modal="true" aria-labelledby="actionModalTitle">
       <div class="modal-head">
-        <div>
-          <div class="modal-kicker">Керування користувачем</div>
-          <h3 id="actionModalTitle">Дії</h3>
-          <p id="actionModalSub" class="modal-sub"></p>
-        </div>
+        <div><div id="actionModalKicker" class="modal-kicker">Керування користувачем</div><h3 id="actionModalTitle">Дії</h3><p id="actionModalSub" class="modal-sub"></p></div>
         <button id="closeActionModal" class="modal-close" type="button">×</button>
       </div>
       <div id="actionModalBody" class="action-grid"></div>
@@ -97,6 +93,7 @@
       const usersBody = document.getElementById('usersBody');
       const notice = document.getElementById('notice');
       const actionModal = document.getElementById('userActionModal');
+      const actionModalKicker = document.getElementById('actionModalKicker');
       const actionModalTitle = document.getElementById('actionModalTitle');
       const actionModalSub = document.getElementById('actionModalSub');
       const actionModalBody = document.getElementById('actionModalBody');
@@ -106,27 +103,21 @@
       async function loadUsers(){
         usersBody.innerHTML = '<tr><td colspan="8">Завантаження...</td></tr>';
         setNotice('');
-        let rows = [];
-        let source = 'profiles';
+        let rows = []; let source = 'profiles';
         const profileResp = await supabase.from('rebus_profiles').select('*').order('created_at', { ascending:false });
-        if (!profileResp.error) {
-          rows = profileResp.data || [];
-        } else {
-          state.profilesAvailable = false;
-          source = 'admin_access';
+        if (!profileResp.error) rows = profileResp.data || [];
+        else {
+          state.profilesAvailable = false; source = 'admin_access';
           const adminResp = await supabase.from('rebus_admin_access').select('*').order('created_at', { ascending:false });
           if (adminResp.error) {
             usersBody.innerHTML = `<tr><td colspan="8">Помилка завантаження: ${A.esc(adminResp.error.message)}</td></tr>`;
-            setNotice(`rebus_profiles недоступна (${profileResp.error.message}). rebus_admin_access також не читається (${adminResp.error.message}).`, 'error');
-            return;
+            setNotice(`rebus_profiles недоступна (${profileResp.error.message}). rebus_admin_access також не читається (${adminResp.error.message}).`, 'error'); return;
           }
           rows = adminResp.data || [];
           setNotice(`Увага: rebus_profiles недоступна (${profileResp.error.message}). Показано резервні дані з rebus_admin_access.`, '');
         }
         state.users = rows.map(r => A.mapUser({...r, source}));
-        await loadContours();
-        applyContourNames();
-        render();
+        await loadContours(); applyContourNames(); render();
       }
 
       async function loadContours(){
@@ -135,15 +126,10 @@
           supabase.from('rebus_contour_members').select('*')
         ]);
         if (contoursResp.error || membersResp.error) {
-          state.contoursAvailable = false;
-          state.contours = [];
-          state.memberships = [];
-          setNotice(`Контури ще не налаштовані в Supabase. Застосуй SQL з файлу supabase-contours.sql. ${contoursResp.error ? contoursResp.error.message : membersResp.error.message}`, '');
-          return;
+          state.contoursAvailable = false; state.contours = []; state.memberships = [];
+          setNotice(`Контури ще не налаштовані в Supabase. Застосуй SQL з файлу supabase-contours.sql. ${contoursResp.error ? contoursResp.error.message : membersResp.error.message}`, ''); return;
         }
-        state.contoursAvailable = true;
-        state.contours = contoursResp.data || [];
-        state.memberships = membersResp.data || [];
+        state.contoursAvailable = true; state.contours = contoursResp.data || []; state.memberships = membersResp.data || [];
       }
 
       function applyContourNames(){
@@ -151,43 +137,26 @@
         state.users.forEach(u => {
           const membership = state.memberships.find(m => String(m.user_id || '') === String(u.id) || String(m.email || '').toLowerCase() === String(u.email || '').toLowerCase());
           u.contour_id = membership?.contour_id || '';
-          const contour = activeContours.get(String(u.contour_id));
-          u.contour_name = contour?.name || 'Без контуру';
+          u.contour_name = activeContours.get(String(u.contour_id))?.name || 'Без контуру';
         });
       }
 
       function contourSelect(u){
         const options = ['<option value="">Без контуру</option>'].concat(state.contours.filter(c => c.is_active !== false).map(c => `<option value="${A.esc(c.id)}" ${String(c.id)===String(u.contour_id)?'selected':''}>${A.esc(c.name)}</option>`)).join('');
-        const disabled = state.contoursAvailable ? '' : 'disabled';
-        return `<select class="contour-select" data-contour-user="${A.esc(u.id)}" ${disabled}>${options}</select>`;
+        return `<select class="contour-select" data-contour-user="${A.esc(u.id)}" ${state.contoursAvailable ? '' : 'disabled'}>${options}</select>`;
       }
 
       async function updateUserContour(userId, contourId){
-        const u = state.users.find(x => String(x.id) === String(userId));
-        if (!u || !state.contoursAvailable) return;
+        const u = state.users.find(x => String(x.id) === String(userId)); if (!u || !state.contoursAvailable) return;
         setNotice('Оновлюю контур користувача...', '');
-        const now = new Date().toISOString();
         const existing = state.memberships.filter(m => String(m.user_id || '') === String(u.id) || String(m.email || '').toLowerCase() === String(u.email || '').toLowerCase());
-        for (const m of existing) {
-          await supabase.from('rebus_contour_members').delete().eq('id', m.id);
-        }
+        for (const m of existing) await supabase.from('rebus_contour_members').delete().eq('id', m.id);
         if (contourId) {
-          const { error } = await supabase.from('rebus_contour_members').insert({
-            contour_id: contourId,
-            user_id: u.id,
-            email: u.email,
-            role: u.role,
-            marker: u.marker,
-            added_by: ctx.session?.user?.email || null,
-            created_at: now
-          });
+          const { error } = await supabase.from('rebus_contour_members').insert({ contour_id: contourId, user_id: u.id, email: u.email, role: u.role, marker: u.marker, added_by: ctx.session?.user?.email || null, created_at: new Date().toISOString() });
           if (error) { setNotice(error.message || 'Не вдалося призначити контур.', 'error'); return; }
         }
         await A.logEvent(supabase, { marker:u.marker, email:u.email, action: contourId ? `Призначено контур: ${(state.contours.find(c=>String(c.id)===String(contourId))||{}).name || contourId}` : 'Контур знято', status:'success' });
-        await loadContours();
-        applyContourNames();
-        setNotice('Контур користувача оновлено.', 'ok');
-        render();
+        await loadContours(); applyContourNames(); setNotice('Контур користувача оновлено.', 'ok'); render();
       }
 
       function filtered(){
@@ -195,32 +164,21 @@
         if (state.filter !== 'all') list = list.filter(u => u.status === state.filter);
         const q = state.query.trim().toLowerCase();
         if (q) list = list.filter(u => [u.marker,u.email,u.full_name,A.roleLabel(u.role),u.contour_name,u.status].join(' ').toLowerCase().includes(q));
-        list.sort((a,b) => {
-          const av = a[state.sort] || '';
-          const bv = b[state.sort] || '';
-          return String(av).localeCompare(String(bv), 'uk', { numeric:true }) * state.dir;
-        });
+        list.sort((a,b) => String(a[state.sort] || '').localeCompare(String(b[state.sort] || ''), 'uk', { numeric:true }) * state.dir);
         return list;
       }
 
       function updateCounts(){
-        document.getElementById('countAll').textContent = state.users.length;
-        document.getElementById('countActive').textContent = state.users.filter(u=>u.status==='active').length;
-        document.getElementById('countInactive').textContent = state.users.filter(u=>u.status==='inactive').length;
-        document.getElementById('countDeleted').textContent = state.users.filter(u=>u.status==='deleted').length;
+        countAll.textContent = state.users.length; countActive.textContent = state.users.filter(u=>u.status==='active').length;
+        countInactive.textContent = state.users.filter(u=>u.status==='inactive').length; countDeleted.textContent = state.users.filter(u=>u.status==='deleted').length;
       }
 
       function render(){
-        updateCounts();
-        const list = filtered();
-        const totalPages = Math.max(1, Math.ceil(list.length / state.pageSize));
-        state.page = Math.min(state.page, totalPages);
+        updateCounts(); const list = filtered(); const totalPages = Math.max(1, Math.ceil(list.length / state.pageSize)); state.page = Math.min(state.page, totalPages);
         const pageItems = list.slice((state.page-1)*state.pageSize, state.page*state.pageSize);
         usersBody.innerHTML = pageItems.length ? pageItems.map(userRow).join('') : '<tr><td colspan="8">Користувачів не знайдено</td></tr>';
-        document.getElementById('shownCount').textContent = `Показано: ${pageItems.length ? ((state.page-1)*state.pageSize+1) : 0}-${Math.min(state.page*state.pageSize, list.length)} із ${list.length} користувачів`;
-        document.getElementById('pageNo').textContent = state.page;
-        document.getElementById('prevPage').disabled = state.page <= 1;
-        document.getElementById('nextPage').disabled = state.page >= totalPages;
+        shownCount.textContent = `Показано: ${pageItems.length ? ((state.page-1)*state.pageSize+1) : 0}-${Math.min(state.page*state.pageSize, list.length)} із ${list.length} користувачів`;
+        pageNo.textContent = state.page; prevPage.disabled = state.page <= 1; nextPage.disabled = state.page >= totalPages;
       }
 
       function userRow(u){
@@ -228,99 +186,70 @@
         return `<tr data-id="${A.esc(u.id)}">
           <td>${A.esc(u.marker)}</td>
           <td><div class="user-cell">${avatar}<div><div class="email-main">${A.esc(u.email)}</div><div class="email-sub">${A.esc(u.full_name || u.email)}</div></div></div></td>
-          <td><span class="role-badge role-${A.esc(u.role)}">${A.esc(A.roleLabel(u.role))}</span></td>
+          <td><button class="role-edit-btn role-badge role-${A.esc(u.role)}" data-open-role="${A.esc(u.id)}" type="button">${A.esc(A.roleLabel(u.role))}</button></td>
           <td>${contourSelect(u)}</td>
           <td><span class="status-badge status-${A.esc(u.status)}">${A.esc(A.statusLabel(u.status))}</span></td>
-          <td>${A.esc(A.fmtDate(u.last_login))}</td>
-          <td>${A.esc(A.fmtDate(u.created_at))}</td>
-          <td>${actionsMenu(u)}</td>
+          <td>${A.esc(A.fmtDate(u.last_login))}</td><td>${A.esc(A.fmtDate(u.created_at))}</td>
+          <td><button class="dots-btn" data-open-status="${A.esc(u.id)}" type="button" aria-label="Дії користувача">⋮</button></td>
         </tr>`;
       }
 
-      function actionsMenu(u){
-        return `<button class="dots-btn" data-open-actions="${A.esc(u.id)}" type="button" aria-label="Дії користувача">⋮</button>`;
-      }
-
-      function openActionsModal(id){
-        const u = state.users.find(x => String(x.id) === String(id));
-        if (!u) return;
-        actionModalTitle.textContent = u.marker || 'Користувач';
+      function openStatusModal(id){
+        const u = state.users.find(x => String(x.id) === String(id)); if (!u) return;
+        actionModalKicker.textContent = 'Статус користувача'; actionModalTitle.textContent = u.marker || 'Користувач';
         actionModalSub.textContent = `${u.email} · ${A.roleLabel(u.role)} · ${A.statusLabel(u.status)}`;
         actionModalBody.innerHTML = `
           <button class="action-tile" data-action="status" data-value="active" data-id="${A.esc(u.id)}"><span>●</span><div><strong>Активувати</strong><small>Дозволити роботу в системі</small></div></button>
           <button class="action-tile" data-action="status" data-value="inactive" data-id="${A.esc(u.id)}"><span>●</span><div><strong>Деактивувати</strong><small>Тимчасово вимкнути доступ</small></div></button>
-          <button class="action-tile" data-action="role" data-value="user" data-id="${A.esc(u.id)}"><span>👤</span><div><strong>Зробити користувачем</strong><small>Роль для базового шифрування</small></div></button>
-          <button class="action-tile" data-action="role" data-value="operator" data-id="${A.esc(u.id)}"><span>🛡️</span><div><strong>Зробити оператором</strong><small>Доступ до розшифрування в межах контуру</small></div></button>
-          <button class="action-tile" data-action="role" data-value="admin" data-id="${A.esc(u.id)}"><span>👑</span><div><strong>Зробити адміністратором</strong><small>Керування користувачами й контурами</small></div></button>
-          <button class="action-tile" data-action="role" data-value="super_admin" data-id="${A.esc(u.id)}"><span>◆</span><div><strong>Зробити суперадміністратором</strong><small>Повні права системи</small></div></button>
           <button class="action-tile danger" data-action="status" data-value="deleted" data-id="${A.esc(u.id)}"><span>🗑️</span><div><strong>Видалити</strong><small>Позначити обліковий запис як видалений</small></div></button>`;
-        actionModal.hidden = false;
-        requestAnimationFrame(() => actionModal.classList.add('open'));
+        showModal();
       }
 
-      function closeActionsModal(){
-        actionModal.classList.remove('open');
-        setTimeout(() => { actionModal.hidden = true; }, 160);
+      function openRoleModal(id){
+        const u = state.users.find(x => String(x.id) === String(id)); if (!u) return;
+        actionModalKicker.textContent = 'Зміна ролі'; actionModalTitle.textContent = u.marker || 'Користувач';
+        actionModalSub.textContent = `${u.email} · поточна роль: ${A.roleLabel(u.role)}`;
+        actionModalBody.innerHTML = `
+          <button class="action-tile" data-action="role" data-value="user" data-id="${A.esc(u.id)}"><span>👤</span><div><strong>Користувач</strong><small>Базове шифрування файлів</small></div></button>
+          <button class="action-tile" data-action="role" data-value="operator" data-id="${A.esc(u.id)}"><span>🛡️</span><div><strong>Оператор</strong><small>Розшифрування в межах контуру</small></div></button>
+          <button class="action-tile" data-action="role" data-value="admin" data-id="${A.esc(u.id)}"><span>👑</span><div><strong>Адміністратор</strong><small>Керування користувачами і контурами</small></div></button>
+          <button class="action-tile" data-action="role" data-value="super_admin" data-id="${A.esc(u.id)}"><span>◆</span><div><strong>Суперадміністратор</strong><small>Повні права системи</small></div></button>`;
+        showModal();
       }
+
+      function showModal(){ actionModal.hidden = false; requestAnimationFrame(() => actionModal.classList.add('open')); }
+      function closeActionsModal(){ actionModal.classList.remove('open'); setTimeout(() => { actionModal.hidden = true; }, 160); }
 
       async function updateUser(id, patch){
-        const u = state.users.find(x => String(x.id) === String(id));
-        if (!u) return;
-        const byEmail = u.email;
-        const statusPatch = patch.status ? { status: patch.status, is_active: patch.status === 'active' } : {};
-        const rolePatch = patch.role ? { role: patch.role } : {};
-        const dbPatch = {...statusPatch, ...rolePatch, updated_at: new Date().toISOString()};
-        setNotice('Застосовую зміни...', '');
-        let ok = false, lastError = null;
-        if (state.profilesAvailable) {
-          const { error } = await supabase.from('rebus_profiles').update(dbPatch).eq('email', byEmail);
-          if (!error) ok = true; else lastError = error;
-        }
-        const nextRole = patch.role ? A.normalizeRole(patch.role) : A.normalizeRole(u.role);
-        const isAdminRole = nextRole === 'admin' || nextRole === 'super_admin';
+        const u = state.users.find(x => String(x.id) === String(id)); if (!u) return;
+        const byEmail = u.email; const statusPatch = patch.status ? { status: patch.status, is_active: patch.status === 'active' } : {};
+        const rolePatch = patch.role ? { role: patch.role } : {}; const dbPatch = {...statusPatch, ...rolePatch, updated_at: new Date().toISOString()};
+        setNotice('Застосовую зміни...', ''); let ok = false, lastError = null;
+        if (state.profilesAvailable) { const { error } = await supabase.from('rebus_profiles').update(dbPatch).eq('email', byEmail); if (!error) ok = true; else lastError = error; }
+        const nextRole = patch.role ? A.normalizeRole(patch.role) : A.normalizeRole(u.role); const isAdminRole = nextRole === 'admin' || nextRole === 'super_admin';
         if (isAdminRole) {
-          const adminPatch = {
-            email: byEmail,
-            marker: u.marker,
-            role: nextRole,
-            is_active: patch.status ? patch.status === 'active' : u.status !== 'inactive' && u.status !== 'deleted',
-            mfa_required: true,
-            updated_at: new Date().toISOString()
-          };
-          const adminUpdate = await supabase.from('rebus_admin_access').upsert(adminPatch, { onConflict:'email' });
-          if (!adminUpdate.error) ok = true; else lastError = adminUpdate.error;
+          const adminPatch = { email: byEmail, marker: u.marker, role: nextRole, is_active: patch.status ? patch.status === 'active' : u.status !== 'inactive' && u.status !== 'deleted', mfa_required: true, updated_at: new Date().toISOString() };
+          const adminUpdate = await supabase.from('rebus_admin_access').upsert(adminPatch, { onConflict:'email' }); if (!adminUpdate.error) ok = true; else lastError = adminUpdate.error;
         } else {
-          const adminUpdate = await supabase.from('rebus_admin_access')
-            .update({ role: nextRole, is_active:false, updated_at:new Date().toISOString() })
-            .eq('email', byEmail);
-          if (!adminUpdate.error) ok = true;
+          const adminUpdate = await supabase.from('rebus_admin_access').update({ role: nextRole, is_active:false, updated_at:new Date().toISOString() }).eq('email', byEmail); if (!adminUpdate.error) ok = true;
         }
         if (!ok) { setNotice(lastError?.message || 'Не вдалося оновити користувача.', 'error'); return; }
         await A.logEvent(supabase, { marker:u.marker, email:u.email, action: patch.role ? `Змінено роль: ${A.roleLabel(patch.role)}` : `Змінено статус: ${patch.status}`, status:'success' });
-        if (patch.role) u.role = patch.role;
-        if (patch.status) u.status = patch.status;
-        closeActionsModal();
-        setNotice('Зміни збережено.', 'ok');
-        render();
+        if (patch.role) u.role = patch.role; if (patch.status) u.status = patch.status;
+        closeActionsModal(); setNotice('Зміни збережено.', 'ok'); render();
       }
 
-      document.getElementById('searchInput').addEventListener('input', e => { state.query = e.target.value; state.page=1; render(); });
+      searchInput.addEventListener('input', e => { state.query = e.target.value; state.page=1; render(); });
       document.querySelectorAll('.filter-btn').forEach(btn => btn.addEventListener('click', () => { document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); state.filter=btn.dataset.filter; state.page=1; render(); }));
       document.querySelectorAll('th.sortable').forEach(th => th.addEventListener('click', () => { const s=th.dataset.sort; state.dir = state.sort === s ? state.dir * -1 : 1; state.sort=s; render(); }));
-      document.getElementById('prevPage').onclick = () => { state.page=Math.max(1,state.page-1); render(); };
-      document.getElementById('nextPage').onclick = () => { state.page+=1; render(); };
-      document.getElementById('closeActionModal').onclick = closeActionsModal;
-      actionModal.addEventListener('click', e => { if (e.target === actionModal) closeActionsModal(); });
+      prevPage.onclick = () => { state.page=Math.max(1,state.page-1); render(); }; nextPage.onclick = () => { state.page+=1; render(); };
+      closeActionModal.onclick = closeActionsModal; actionModal.addEventListener('click', e => { if (e.target === actionModal) closeActionsModal(); });
       document.addEventListener('keydown', e => { if (e.key === 'Escape' && !actionModal.hidden) closeActionsModal(); });
-      document.addEventListener('change', e => {
-        const select = e.target.closest('[data-contour-user]');
-        if (select) updateUserContour(select.dataset.contourUser, select.value);
-      });
+      document.addEventListener('change', e => { const select = e.target.closest('[data-contour-user]'); if (select) updateUserContour(select.dataset.contourUser, select.value); });
       document.addEventListener('click', e => {
-        const menuBtn = e.target.closest('[data-open-actions]');
-        if (menuBtn) { openActionsModal(menuBtn.dataset.openActions); return; }
-        const action = e.target.closest('[data-action]');
-        if (action) updateUser(action.dataset.id, { [action.dataset.action]: action.dataset.value });
+        const statusBtn = e.target.closest('[data-open-status]'); if (statusBtn) { openStatusModal(statusBtn.dataset.openStatus); return; }
+        const roleBtn = e.target.closest('[data-open-role]'); if (roleBtn) { openRoleModal(roleBtn.dataset.openRole); return; }
+        const action = e.target.closest('[data-action]'); if (action) updateUser(action.dataset.id, { [action.dataset.action]: action.dataset.value });
       });
       loadUsers();
     });
