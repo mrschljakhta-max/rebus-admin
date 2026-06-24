@@ -1,7 +1,28 @@
 /* REBUS Admin hotfix v20260624 */
 @media (min-width: 901px) {
+  .sidebar .brand {
+    position: relative !important;
+  }
+
+  .sidebar .brand img {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    height: 0 !important;
+    flex: 0 0 0 !important;
+  }
+
+  .sidebar .brand::before {
+    content: "";
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    display: block;
+    background: url("../assets/favicon-rebus.svg?v=20260624-logo-fixed") center / contain no-repeat;
+    filter: drop-shadow(0 0 12px rgba(255,255,255,.30));
+  }
+
   .sidebar:not(:hover):not(:focus-within) .brand {
-    position: relative;
     width: 58px !important;
     height: 48px !important;
     min-height: 48px !important;
@@ -10,18 +31,10 @@
     place-items: center !important;
   }
 
-  .sidebar:not(:hover):not(:focus-within) .brand img {
-    opacity: 0 !important;
-    visibility: hidden !important;
-  }
-
   .sidebar:not(:hover):not(:focus-within) .brand::before {
-    content: "";
-    width: 36px;
-    height: 36px;
-    display: block;
-    background: url("../assets/favicon-rebus.svg?v=20260624-logo-bright") center / contain no-repeat;
-    filter: drop-shadow(0 0 12px rgba(255,255,255,.30));
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
   }
 }
 
