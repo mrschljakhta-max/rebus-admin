@@ -1,0 +1,48 @@
+/* REBUS Admin hotfix v20260624 */
+@media (min-width: 901px) {
+  .sidebar:not(:hover):not(:focus-within) .brand {
+    position: relative;
+    width: 58px !important;
+    height: 46px !important;
+    min-height: 46px !important;
+    margin: 0 auto 34px !important;
+    display: grid !important;
+    place-items: center !important;
+  }
+
+  .sidebar:not(:hover):not(:focus-within) .brand img {
+    opacity: 0 !important;
+    visibility: hidden !important;
+  }
+
+  .sidebar:not(:hover):not(:focus-within) .brand::before {
+    content: "";
+    width: 28px;
+    height: 28px;
+    display: block;
+    background: url("../assets/favicon.png?v=20260624-logo-hotfix") center / contain no-repeat;
+    filter: invert(1) brightness(1.35) drop-shadow(0 0 10px rgba(255,255,255,.22));
+  }
+}
+
+.role-edit-btn {
+  cursor: pointer;
+  border: 1px solid rgba(255,255,255,.08);
+  font-family: inherit;
+}
+
+.role-edit-btn:hover {
+  border-color: rgba(192,52,80,.55);
+  box-shadow: 0 0 0 3px rgba(192,52,80,.10);
+  transform: translateY(-1px);
+}
+
+.action-dialog .action-grid:has(.action-tile:nth-child(3):last-child) {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media(max-width: 980px) {
+  .action-dialog .action-grid:has(.action-tile:nth-child(3):last-child) {
+    grid-template-columns: 1fr;
+  }
+}
