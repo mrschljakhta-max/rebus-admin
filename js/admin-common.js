@@ -23,17 +23,26 @@
     if (!document.querySelector('link[data-rebus-admin-hotfix]')) {
       const hotfix = document.createElement('link');
       hotfix.rel = 'stylesheet';
-      hotfix.href = 'css/admin-hotfix.css?v=20260624-logo-render-fix';
+      hotfix.href = 'css/admin-hotfix.css?v=20260624-role-current-icons';
       hotfix.dataset.rebusAdminHotfix = 'true';
       document.head.appendChild(hotfix);
     }
 
-    if (location.pathname.endsWith('/users.html') && !document.querySelector('script[data-rebus-users-hotfix]')) {
-      const script = document.createElement('script');
-      script.src = 'js/admin-users-hotfix.js?v=20260624-status-toggle';
-      script.defer = true;
-      script.dataset.rebusUsersHotfix = 'true';
-      document.head.appendChild(script);
+    if (location.pathname.endsWith('/users.html')) {
+      if (!document.querySelector('script[data-rebus-users-hotfix]')) {
+        const script = document.createElement('script');
+        script.src = 'js/admin-users-hotfix.js?v=20260624-status-toggle';
+        script.defer = true;
+        script.dataset.rebusUsersHotfix = 'true';
+        document.head.appendChild(script);
+      }
+      if (!document.querySelector('script[data-rebus-role-hotfix]')) {
+        const roleScript = document.createElement('script');
+        roleScript.src = 'js/admin-role-hotfix.js?v=20260624-current-role-icons';
+        roleScript.defer = true;
+        roleScript.dataset.rebusRoleHotfix = 'true';
+        document.head.appendChild(roleScript);
+      }
     }
   }
   injectAdminSidebarStyles();
