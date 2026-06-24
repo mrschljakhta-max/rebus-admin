@@ -7,7 +7,7 @@
   <link rel="icon" type="image/png" href="assets/favicon.png?v=20260612-nq-actions" />
   <link rel="shortcut icon" type="image/png" href="assets/favicon.png?v=20260612-nq-actions" />
   <link rel="apple-touch-icon" href="assets/favicon.png?v=20260612-nq-actions" />
-  <link rel="stylesheet" href="css/styles.css?v=20260612-users-actions" />
+  <link rel="stylesheet" href="css/styles.css?v=20260624-contours-v1" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/config.js"></script>
   <script src="js/auth.js" defer></script>
@@ -21,6 +21,7 @@
         <a href="dashboard.html">Головна</a>
         <a class="active" href="users.html">Користувачі</a>
         <a href="access.html">Надати доступ</a>
+        <a href="contours.html">Контури</a>
         <a href="events.html">Журнал</a>
       </nav>
       <div class="sidebar-footer"><button id="logoutBtn" class="logout-btn" type="button">Вийти</button></div>
@@ -53,13 +54,14 @@
                 <th class="sortable" data-sort="marker">Маркер ⇅</th>
                 <th class="sortable" data-sort="email">Email ⇅</th>
                 <th class="sortable" data-sort="role">Роль ⇅</th>
+                <th class="sortable" data-sort="contour_name">Контур ⇅</th>
                 <th class="sortable" data-sort="status">Статус ⇅</th>
                 <th class="sortable" data-sort="last_login">Останній вхід ⇅</th>
                 <th class="sortable" data-sort="created_at">Створений ⇅</th>
                 <th>Дії</th>
               </tr>
             </thead>
-            <tbody id="usersBody"><tr><td colspan="7">Завантаження...</td></tr></tbody>
+            <tbody id="usersBody"><tr><td colspan="8">Завантаження...</td></tr></tbody>
           </table>
         </div>
         <div class="footer-row">
@@ -77,14 +79,14 @@
       const ctx = await A.getAdminContext(); if (!ctx) return;
       A.renderAdminProfile(document.getElementById('adminEmail'), ctx.session, ctx.admin);
 
-      const state = { users: [], filter:'all', query:'', sort:'marker', dir:1, page:1, pageSize:8, profilesAvailable:true };
+      const state = { users: [], contours: [], memberships: [], filter:'all', query:'', sort:'marker', dir:1, page:1, pageSize:8, profilesAvailable:true, contoursAvailable:true };
       const usersBody = document.getElementById('usersBody');
       const notice = document.getElementById('notice');
 
       function setNotice(text, type='') { notice.innerHTML = text ? `<div class="notice ${type}">${A.esc(text)}</div>` : ''; }
 
       async function loadUsers(){
-        usersBody.innerHTML = '<tr><td colspan="7">Завантаження...</td></tr>';
+        usersBody.innerHTML = '<tr><td colspan="8">Завантаження...</td></tr>';
         setNotice('');
         let rows = [];
         let source = 'profiles';
@@ -96,7 +98,7 @@
           source = 'admin_access';
           const adminResp = await supabase.from('rebus_admin_access').select('*').order('created_at', { ascending:false });
           if (adminResp.error) {
-            usersBody.innerHTML = `<tr><td colspan="7">Помилка завантаження: ${A.esc(adminResp.error.message)}</td></tr>`;
+            usersBody.innerHTML = `<tr><td colspan="8">Помилка завантаження: ${A.esc(adminResp.error.message)}</td></tr>`;
             setNotice(`rebus_profiles недоступна (${profileResp.error.message}). rebus_admin_access також не читається (${adminResp.error.message}).`, 'error');
             return;
           }
@@ -104,6 +106,70 @@
           setNotice(`Увага: rebus_profiles недоступна (${profileResp.error.message}). Показано резервні дані з rebus_admin_access.`, '');
         }
         state.users = rows.map(r => A.mapUser({...r, source}));
+        await loadContours();
+        applyContourNames();
+        render();
+      }
+
+
+      async function loadContours(){
+        const [contoursResp, membersResp] = await Promise.all([
+          supabase.from('rebus_contours').select('*').order('name', { ascending:true }),
+          supabase.from('rebus_contour_members').select('*')
+        ]);
+        if (contoursResp.error || membersResp.error) {
+          state.contoursAvailable = false;
+          state.contours = [];
+          state.memberships = [];
+          setNotice(`Контури ще не налаштовані в Supabase. Застосуй SQL з файлу supabase-contours.sql. ${contoursResp.error ? contoursResp.error.message : membersResp.error.message}`, '');
+          return;
+        }
+        state.contoursAvailable = true;
+        state.contours = contoursResp.data || [];
+        state.memberships = membersResp.data || [];
+      }
+
+      function applyContourNames(){
+        const activeContours = new Map(state.contours.map(c => [String(c.id), c]));
+        state.users.forEach(u => {
+          const membership = state.memberships.find(m => String(m.user_id || '') === String(u.id) || String(m.email || '').toLowerCase() === String(u.email || '').toLowerCase());
+          u.contour_id = membership?.contour_id || '';
+          const contour = activeContours.get(String(u.contour_id));
+          u.contour_name = contour?.name || 'Без контуру';
+        });
+      }
+
+      function contourSelect(u){
+        const options = ['<option value="">Без контуру</option>'].concat(state.contours.filter(c => c.is_active !== false).map(c => `<option value="${A.esc(c.id)}" ${String(c.id)===String(u.contour_id)?'selected':''}>${A.esc(c.name)}</option>`)).join('');
+        const disabled = state.contoursAvailable ? '' : 'disabled';
+        return `<select class="contour-select" data-contour-user="${A.esc(u.id)}" ${disabled}>${options}</select>`;
+      }
+
+      async function updateUserContour(userId, contourId){
+        const u = state.users.find(x => String(x.id) === String(userId));
+        if (!u || !state.contoursAvailable) return;
+        setNotice('Оновлюю контур користувача...', '');
+        const now = new Date().toISOString();
+        const existing = state.memberships.filter(m => String(m.user_id || '') === String(u.id) || String(m.email || '').toLowerCase() === String(u.email || '').toLowerCase());
+        for (const m of existing) {
+          await supabase.from('rebus_contour_members').delete().eq('id', m.id);
+        }
+        if (contourId) {
+          const { error } = await supabase.from('rebus_contour_members').insert({
+            contour_id: contourId,
+            user_id: u.id,
+            email: u.email,
+            role: u.role,
+            marker: u.marker,
+            added_by: ctx.session?.user?.email || null,
+            created_at: now
+          });
+          if (error) { setNotice(error.message || 'Не вдалося призначити контур.', 'error'); return; }
+        }
+        await A.logEvent(supabase, { marker:u.marker, email:u.email, action: contourId ? `Призначено контур: ${(state.contours.find(c=>String(c.id)===String(contourId))||{}).name || contourId}` : 'Контур знято', status:'success' });
+        await loadContours();
+        applyContourNames();
+        setNotice('Контур користувача оновлено.', 'ok');
         render();
       }
 
@@ -111,7 +177,7 @@
         let list = [...state.users];
         if (state.filter !== 'all') list = list.filter(u => u.status === state.filter);
         const q = state.query.trim().toLowerCase();
-        if (q) list = list.filter(u => [u.marker,u.email,u.full_name,A.roleLabel(u.role),u.status].join(' ').toLowerCase().includes(q));
+        if (q) list = list.filter(u => [u.marker,u.email,u.full_name,A.roleLabel(u.role),u.contour_name,u.status].join(' ').toLowerCase().includes(q));
         list.sort((a,b) => {
           const av = a[state.sort] || '';
           const bv = b[state.sort] || '';
@@ -133,7 +199,7 @@
         const totalPages = Math.max(1, Math.ceil(list.length / state.pageSize));
         state.page = Math.min(state.page, totalPages);
         const pageItems = list.slice((state.page-1)*state.pageSize, state.page*state.pageSize);
-        usersBody.innerHTML = pageItems.length ? pageItems.map(userRow).join('') : '<tr><td colspan="7">Користувачів не знайдено</td></tr>';
+        usersBody.innerHTML = pageItems.length ? pageItems.map(userRow).join('') : '<tr><td colspan="8">Користувачів не знайдено</td></tr>';
         document.getElementById('shownCount').textContent = `Показано: ${pageItems.length ? ((state.page-1)*state.pageSize+1) : 0}-${Math.min(state.page*state.pageSize, list.length)} із ${list.length} користувачів`;
         document.getElementById('pageNo').textContent = state.page;
         document.getElementById('prevPage').disabled = state.page <= 1;
@@ -146,6 +212,7 @@
           <td>${A.esc(u.marker)}</td>
           <td><div class="user-cell">${avatar}<div><div class="email-main">${A.esc(u.email)}</div><div class="email-sub">${A.esc(u.full_name || u.email)}</div></div></div></td>
           <td><span class="role-badge role-${A.esc(u.role)}">${A.esc(A.roleLabel(u.role))}</span></td>
+          <td>${contourSelect(u)}</td>
           <td><span class="status-badge status-${A.esc(u.status)}">${A.esc(A.statusLabel(u.status))}</span></td>
           <td>${A.esc(A.fmtDate(u.last_login))}</td>
           <td>${A.esc(A.fmtDate(u.created_at))}</td>
@@ -214,6 +281,10 @@
       document.querySelectorAll('th.sortable').forEach(th => th.addEventListener('click', () => { const s=th.dataset.sort; state.dir = state.sort === s ? state.dir * -1 : 1; state.sort=s; render(); }));
       document.getElementById('prevPage').onclick = () => { state.page=Math.max(1,state.page-1); render(); };
       document.getElementById('nextPage').onclick = () => { state.page+=1; render(); };
+      document.addEventListener('change', e => {
+        const select = e.target.closest('[data-contour-user]');
+        if (select) updateUserContour(select.dataset.contourUser, select.value);
+      });
       document.addEventListener('click', e => {
         const menuBtn = e.target.closest('[data-menu]');
         document.querySelectorAll('.action-menu').forEach(m => { if (!menuBtn || m.id !== `menu-${CSS.escape(String(menuBtn.dataset.menu))}`) m.classList.remove('open'); });
