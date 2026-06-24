@@ -4,10 +4,10 @@
   <title>REBUS — Контури доступу</title>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="icon" type="image/png" href="assets/favicon.png?v=20260624-contours-v1" />
-  <link rel="shortcut icon" type="image/png" href="assets/favicon.png?v=20260624-contours-v1" />
-  <link rel="apple-touch-icon" href="assets/favicon.png?v=20260624-contours-v1" />
-  <link rel="stylesheet" href="css/styles.css?v=20260624-contours-v1" />
+  <link rel="icon" type="image/png" href="assets/favicon.png?v=20260624-contours-v2" />
+  <link rel="shortcut icon" type="image/png" href="assets/favicon.png?v=20260624-contours-v2" />
+  <link rel="apple-touch-icon" href="assets/favicon.png?v=20260624-contours-v2" />
+  <link rel="stylesheet" href="css/styles.css?v=20260624-contours-v2" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/config.js"></script>
   <script src="js/auth.js" defer></script>
@@ -23,12 +23,6 @@
 
     <main class="main">
       <div class="topbar"><h2>Контури доступу</h2><div class="user-pill" id="adminEmail"></div></div>
-
-      <section class="cards contour-cards">
-        <div class="card"><div id="contoursCount" class="num">—</div><div class="label">Контурів</div></div>
-        <div class="card"><div id="membersCount" class="num">—</div><div class="label">Призначень</div></div>
-        <div class="card"><div id="usersWithoutContour" class="num">—</div><div class="label">Без контуру</div></div>
-      </section>
 
       <section class="panel">
         <div class="panel-header"><h3>Створити контур</h3></div>
@@ -117,16 +111,7 @@
         render();
       }
 
-      function renderStats(){
-        document.getElementById('contoursCount').textContent = state.contours.length;
-        document.getElementById('membersCount').textContent = state.memberships.length;
-        const assigned = new Set(state.memberships.map(m => String(m.user_id || m.email || '').toLowerCase()));
-        const without = state.users.filter(u => !assigned.has(String(u.id).toLowerCase()) && !assigned.has(String(u.email).toLowerCase())).length;
-        document.getElementById('usersWithoutContour').textContent = without;
-      }
-
       function render(){
-        renderStats();
         body.innerHTML = state.contours.length ? state.contours.map(c => {
           const count = contourMembers(c.id).length;
           const active = c.is_active !== false;
