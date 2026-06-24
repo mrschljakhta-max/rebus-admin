@@ -47,19 +47,13 @@
   }
 
   .sidebar .brand img {
-    flex: 0 0 24px;
-    width: 24px !important;
-    height: 24px !important;
-    display: block;
-    object-fit: contain;
-    transition: width .2s ease, height .2s ease, flex-basis .2s ease;
-  }
-
-  .sidebar:hover .brand img,
-  .sidebar:focus-within .brand img {
-    flex-basis: 42px;
+    flex: 0 0 42px;
     width: 42px !important;
     height: 42px !important;
+    display: block !important;
+    object-fit: contain;
+    opacity: 1 !important;
+    visibility: visible !important;
   }
 
   .sidebar .brand h1 {
@@ -141,6 +135,12 @@
     box-shadow: inset 0 0 0 1px rgba(192,52,80,.22);
   }
 
+  .sidebar:not(:hover):not(:focus-within) .nav a.active,
+  .sidebar:not(:hover):not(:focus-within) .nav a:hover {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
   .sidebar-footer {
     padding: 18px 0 4px !important;
   }
@@ -188,5 +188,39 @@
     width: 20px;
     height: 20px;
     flex-basis: 20px;
+  }
+
+  .tools-panel {
+    display: grid;
+    grid-template-columns: minmax(360px, 1fr) auto;
+    align-items: center;
+    gap: 18px !important;
+  }
+
+  .tools-panel .search-row {
+    min-width: 0;
+  }
+
+  .tools-panel .search-box {
+    min-width: 0 !important;
+    max-width: 620px;
+  }
+
+  .tools-panel .filter-row {
+    margin-top: 0 !important;
+    justify-content: flex-end;
+    align-items: center;
+    flex-wrap: nowrap;
+  }
+}
+
+@media (min-width: 901px) and (max-width: 1280px) {
+  .tools-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .tools-panel .filter-row {
+    justify-content: flex-start;
+    flex-wrap: wrap;
   }
 }
