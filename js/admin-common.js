@@ -6,7 +6,7 @@
     const svgIcon = document.createElement('link');
     svgIcon.rel = 'icon';
     svgIcon.type = 'image/svg+xml';
-    svgIcon.href = 'assets/favicon-rebus.svg?v=20260624-large-favicon';
+    svgIcon.href = 'assets/favicon-rebus.svg?v=20260624-logo-render-fix';
     document.head.appendChild(svgIcon);
   }
 
@@ -23,7 +23,7 @@
     if (!document.querySelector('link[data-rebus-admin-hotfix]')) {
       const hotfix = document.createElement('link');
       hotfix.rel = 'stylesheet';
-      hotfix.href = 'css/admin-hotfix.css?v=20260624-toggle-favicon-logo';
+      hotfix.href = 'css/admin-hotfix.css?v=20260624-logo-render-fix';
       hotfix.dataset.rebusAdminHotfix = 'true';
       document.head.appendChild(hotfix);
     }
