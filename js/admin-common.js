@@ -23,7 +23,7 @@
     if (!document.querySelector('link[data-rebus-admin-hotfix]')) {
       const hotfix = document.createElement('link');
       hotfix.rel = 'stylesheet';
-      hotfix.href = 'css/admin-hotfix.css?v=20260624-role-current-icons';
+      hotfix.href = 'css/admin-hotfix.css?v=20260624-role-modal-final';
       hotfix.dataset.rebusAdminHotfix = 'true';
       document.head.appendChild(hotfix);
     }
@@ -38,7 +38,7 @@
       }
       if (!document.querySelector('script[data-rebus-role-hotfix]')) {
         const roleScript = document.createElement('script');
-        roleScript.src = 'js/admin-role-hotfix.js?v=20260624-current-role-icons';
+        roleScript.src = 'js/admin-role-modal-fix.js?v=20260624-role-modal-final';
         roleScript.defer = true;
         roleScript.dataset.rebusRoleHotfix = 'true';
         document.head.appendChild(roleScript);
