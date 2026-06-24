@@ -8,6 +8,14 @@
     link.href = 'css/admin-sidebar-collapse.css?v=20260624-sidebar-collapse';
     link.dataset.rebusSidebarCollapse = 'true';
     document.head.appendChild(link);
+
+    if (!document.querySelector('link[data-rebus-admin-hotfix]')) {
+      const hotfix = document.createElement('link');
+      hotfix.rel = 'stylesheet';
+      hotfix.href = 'css/admin-hotfix.css?v=20260624-role-status-modal';
+      hotfix.dataset.rebusAdminHotfix = 'true';
+      document.head.appendChild(hotfix);
+    }
   }
   injectAdminSidebarStyles();
 
