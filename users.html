@@ -72,6 +72,20 @@
     </main>
   </div>
 
+  <div id="userActionModal" class="modal-backdrop rebus-action-modal" hidden>
+    <div class="modal action-dialog" role="dialog" aria-modal="true" aria-labelledby="actionModalTitle">
+      <div class="modal-head">
+        <div>
+          <div class="modal-kicker">Керування користувачем</div>
+          <h3 id="actionModalTitle">Дії</h3>
+          <p id="actionModalSub" class="modal-sub"></p>
+        </div>
+        <button id="closeActionModal" class="modal-close" type="button">×</button>
+      </div>
+      <div id="actionModalBody" class="action-grid"></div>
+    </div>
+  </div>
+
   <script>
     window.addEventListener('DOMContentLoaded', async () => {
       const { supabase } = window.rebusAuth;
@@ -82,6 +96,10 @@
       const state = { users: [], contours: [], memberships: [], filter:'all', query:'', sort:'marker', dir:1, page:1, pageSize:8, profilesAvailable:true, contoursAvailable:true };
       const usersBody = document.getElementById('usersBody');
       const notice = document.getElementById('notice');
+      const actionModal = document.getElementById('userActionModal');
+      const actionModalTitle = document.getElementById('actionModalTitle');
+      const actionModalSub = document.getElementById('actionModalSub');
+      const actionModalBody = document.getElementById('actionModalBody');
 
       function setNotice(text, type='') { notice.innerHTML = text ? `<div class="notice ${type}">${A.esc(text)}</div>` : ''; }
 
@@ -110,7 +128,6 @@
         applyContourNames();
         render();
       }
-
 
       async function loadContours(){
         const [contoursResp, membersResp] = await Promise.all([
@@ -221,18 +238,29 @@
       }
 
       function actionsMenu(u){
-        return `<div class="action-wrap">
-          <button class="dots-btn" data-menu="${A.esc(u.id)}" type="button">⋮</button>
-          <div class="action-menu" id="menu-${CSS.escape(String(u.id))}">
-            <button data-action="status" data-value="active" data-id="${A.esc(u.id)}">● Активувати</button>
-            <button data-action="status" data-value="inactive" data-id="${A.esc(u.id)}">● Деактивувати</button>
-            <button data-action="role" data-value="user" data-id="${A.esc(u.id)}">👤 Зробити користувачем</button>
-            <button data-action="role" data-value="operator" data-id="${A.esc(u.id)}">🛡️ Зробити оператором</button>
-            <button data-action="role" data-value="admin" data-id="${A.esc(u.id)}">👑 Зробити адміністратором</button>
-            <button data-action="role" data-value="super_admin" data-id="${A.esc(u.id)}">◆ Зробити суперадміністратором</button>
-            <button class="danger" data-action="status" data-value="deleted" data-id="${A.esc(u.id)}">🗑️ Видалити</button>
-          </div>
-        </div>`;
+        return `<button class="dots-btn" data-open-actions="${A.esc(u.id)}" type="button" aria-label="Дії користувача">⋮</button>`;
+      }
+
+      function openActionsModal(id){
+        const u = state.users.find(x => String(x.id) === String(id));
+        if (!u) return;
+        actionModalTitle.textContent = u.marker || 'Користувач';
+        actionModalSub.textContent = `${u.email} · ${A.roleLabel(u.role)} · ${A.statusLabel(u.status)}`;
+        actionModalBody.innerHTML = `
+          <button class="action-tile" data-action="status" data-value="active" data-id="${A.esc(u.id)}"><span>●</span><div><strong>Активувати</strong><small>Дозволити роботу в системі</small></div></button>
+          <button class="action-tile" data-action="status" data-value="inactive" data-id="${A.esc(u.id)}"><span>●</span><div><strong>Деактивувати</strong><small>Тимчасово вимкнути доступ</small></div></button>
+          <button class="action-tile" data-action="role" data-value="user" data-id="${A.esc(u.id)}"><span>👤</span><div><strong>Зробити користувачем</strong><small>Роль для базового шифрування</small></div></button>
+          <button class="action-tile" data-action="role" data-value="operator" data-id="${A.esc(u.id)}"><span>🛡️</span><div><strong>Зробити оператором</strong><small>Доступ до розшифрування в межах контуру</small></div></button>
+          <button class="action-tile" data-action="role" data-value="admin" data-id="${A.esc(u.id)}"><span>👑</span><div><strong>Зробити адміністратором</strong><small>Керування користувачами й контурами</small></div></button>
+          <button class="action-tile" data-action="role" data-value="super_admin" data-id="${A.esc(u.id)}"><span>◆</span><div><strong>Зробити суперадміністратором</strong><small>Повні права системи</small></div></button>
+          <button class="action-tile danger" data-action="status" data-value="deleted" data-id="${A.esc(u.id)}"><span>🗑️</span><div><strong>Видалити</strong><small>Позначити обліковий запис як видалений</small></div></button>`;
+        actionModal.hidden = false;
+        requestAnimationFrame(() => actionModal.classList.add('open'));
+      }
+
+      function closeActionsModal(){
+        actionModal.classList.remove('open');
+        setTimeout(() => { actionModal.hidden = true; }, 160);
       }
 
       async function updateUser(id, patch){
@@ -262,7 +290,6 @@
           const adminUpdate = await supabase.from('rebus_admin_access').upsert(adminPatch, { onConflict:'email' });
           if (!adminUpdate.error) ok = true; else lastError = adminUpdate.error;
         } else {
-          // operator/user: доступ до адмінки вимикаємо, але профіль у rebus_profiles лишається активним для розширення.
           const adminUpdate = await supabase.from('rebus_admin_access')
             .update({ role: nextRole, is_active:false, updated_at:new Date().toISOString() })
             .eq('email', byEmail);
@@ -272,6 +299,7 @@
         await A.logEvent(supabase, { marker:u.marker, email:u.email, action: patch.role ? `Змінено роль: ${A.roleLabel(patch.role)}` : `Змінено статус: ${patch.status}`, status:'success' });
         if (patch.role) u.role = patch.role;
         if (patch.status) u.status = patch.status;
+        closeActionsModal();
         setNotice('Зміни збережено.', 'ok');
         render();
       }
@@ -281,14 +309,16 @@
       document.querySelectorAll('th.sortable').forEach(th => th.addEventListener('click', () => { const s=th.dataset.sort; state.dir = state.sort === s ? state.dir * -1 : 1; state.sort=s; render(); }));
       document.getElementById('prevPage').onclick = () => { state.page=Math.max(1,state.page-1); render(); };
       document.getElementById('nextPage').onclick = () => { state.page+=1; render(); };
+      document.getElementById('closeActionModal').onclick = closeActionsModal;
+      actionModal.addEventListener('click', e => { if (e.target === actionModal) closeActionsModal(); });
+      document.addEventListener('keydown', e => { if (e.key === 'Escape' && !actionModal.hidden) closeActionsModal(); });
       document.addEventListener('change', e => {
         const select = e.target.closest('[data-contour-user]');
         if (select) updateUserContour(select.dataset.contourUser, select.value);
       });
       document.addEventListener('click', e => {
-        const menuBtn = e.target.closest('[data-menu]');
-        document.querySelectorAll('.action-menu').forEach(m => { if (!menuBtn || m.id !== `menu-${CSS.escape(String(menuBtn.dataset.menu))}`) m.classList.remove('open'); });
-        if (menuBtn) { document.getElementById(`menu-${CSS.escape(String(menuBtn.dataset.menu))}`)?.classList.toggle('open'); return; }
+        const menuBtn = e.target.closest('[data-open-actions]');
+        if (menuBtn) { openActionsModal(menuBtn.dataset.openActions); return; }
         const action = e.target.closest('[data-action]');
         if (action) updateUser(action.dataset.id, { [action.dataset.action]: action.dataset.value });
       });
