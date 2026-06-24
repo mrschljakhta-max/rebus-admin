@@ -2,6 +2,9 @@
 @media (min-width: 901px) {
   .sidebar .brand {
     position: relative !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border: 0 !important;
   }
 
   .sidebar .brand img {
@@ -14,12 +17,14 @@
 
   .sidebar .brand::before {
     content: "";
-    width: 44px;
-    height: 44px;
-    flex: 0 0 44px;
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
     display: block;
-    background: url("../assets/favicon-rebus.svg?v=20260624-logo-fixed") center / contain no-repeat;
-    filter: drop-shadow(0 0 12px rgba(255,255,255,.30));
+    background: url("../assets/favicon-rebus.svg?v=20260624-transparent-logo") center / contain no-repeat;
+    filter: drop-shadow(0 0 10px rgba(255,255,255,.22));
+    border: 0 !important;
+    box-shadow: none !important;
   }
 
   .sidebar:not(:hover):not(:focus-within) .brand {
@@ -32,9 +37,9 @@
   }
 
   .sidebar:not(:hover):not(:focus-within) .brand::before {
-    width: 40px;
-    height: 40px;
-    flex-basis: 40px;
+    width: 36px;
+    height: 36px;
+    flex-basis: 36px;
   }
 }
 
