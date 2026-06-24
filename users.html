@@ -28,36 +28,13 @@
       gap:16px!important;
     }
     .role-choice-card.current-role{
-      padding-top:56px!important;
+      padding-top:26px!important;
       padding-right:22px!important;
     }
     .role-choice-card.current-role{
       border-color:#ff5b87!important;
       background:linear-gradient(135deg,rgba(139,22,55,.72),rgba(44,22,31,.88))!important;
       box-shadow:0 0 0 1px rgba(255,91,135,.35),0 18px 42px rgba(139,22,55,.22)!important;
-    }
-    .current-role-badge{
-      position:absolute!important;
-      top:16px!important;
-      left:22px!important;
-      right:auto!important;
-      transform:none!important;
-      max-width:calc(100% - 44px)!important;
-      white-space:nowrap!important;
-      overflow:hidden!important;
-      text-overflow:ellipsis!important;
-      padding:7px 11px!important;
-      border-radius:999px!important;
-      background:rgba(255,91,135,.20)!important;
-      border:1px solid rgba(255,91,135,.58)!important;
-      color:#ffb4c9!important;
-      font-weight:900!important;
-      font-size:10px!important;
-      line-height:1!important;
-      text-transform:uppercase!important;
-      letter-spacing:.045em!important;
-      z-index:4!important;
-      box-sizing:border-box!important;
     }
     .role-choice-icon{
       width:44px!important;
@@ -432,7 +409,6 @@
         actionModalBody.innerHTML = Object.entries(ROLE_META).map(([role, meta]) => {
           const current = A.normalizeRole(u.role) === role;
           return `<button class="action-tile role-choice-tile role-choice-card ${current ? 'current-role' : ''}" data-action="role" data-value="${role}" data-id="${A.esc(u.id)}" type="button">
-            ${current ? '<span class="current-role-badge">Поточна роль</span>' : ''}
             <span class="role-choice-icon"><img src="${meta.icon}" alt=""></span>
             <div><strong>${meta.label}</strong><small>${meta.desc}</small></div>
           </button>`;
