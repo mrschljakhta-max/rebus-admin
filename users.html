@@ -12,6 +12,9 @@
   <script src="js/config.js"></script>
   <script src="js/auth.js" defer></script>
   <script src="js/admin-common.js" defer></script>
+  <style>
+    .role-picker-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.role-choice-card{position:relative;overflow:hidden}.role-choice-card.current-role{border-color:#ff5b87!important;background:linear-gradient(135deg,rgba(139,22,55,.72),rgba(44,22,31,.88))!important;box-shadow:0 0 0 1px rgba(255,91,135,.35),0 18px 42px rgba(139,22,55,.22)}.current-role-badge{position:absolute;top:12px;right:12px;padding:6px 10px;border-radius:999px;background:rgba(255,91,135,.18);border:1px solid rgba(255,91,135,.55);color:#ff9fbc;font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:.06em}.role-choice-icon{width:44px;height:44px;display:grid;place-items:center;border-radius:14px;background:rgba(139,22,55,.38);border:1px solid rgba(255,91,135,.22);flex:0 0 44px}.role-choice-icon img{width:28px;height:28px;object-fit:contain;filter:brightness(0) invert(1)}.status-toggle-layout{display:grid!important;grid-template-columns:1.4fr 1fr;gap:14px}.status-toggle-card{border:1px solid rgba(255,255,255,.12);background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.03));border-radius:18px;padding:18px 20px;display:flex;align-items:center;gap:16px;text-align:left;color:#fff;cursor:pointer}.status-toggle-card.is-active{border-color:rgba(31,209,103,.45);box-shadow:0 18px 42px rgba(31,209,103,.12)}.status-toggle-card.is-inactive{border-color:rgba(255,91,135,.45);box-shadow:0 18px 42px rgba(255,91,135,.12)}.status-toggle-switch{width:58px;height:32px;border-radius:999px;background:rgba(255,91,135,.35);border:1px solid rgba(255,91,135,.45);position:relative;flex:0 0 58px}.status-toggle-switch span{position:absolute;width:24px;height:24px;top:3px;left:4px;border-radius:50%;background:#fff;box-shadow:0 6px 14px rgba(0,0,0,.35);transition:.18s}.status-toggle-card.is-active .status-toggle-switch{background:rgba(31,209,103,.35);border-color:rgba(31,209,103,.65)}.status-toggle-card.is-active .status-toggle-switch span{left:28px}.delete-user-tile{min-height:88px}@media(max-width:860px){.role-picker-grid,.status-toggle-layout{grid-template-columns:1fr!important}}
+  </style>
 </head>
 <body>
   <div class="app-shell">
@@ -97,6 +100,12 @@
       const actionModalTitle = document.getElementById('actionModalTitle');
       const actionModalSub = document.getElementById('actionModalSub');
       const actionModalBody = document.getElementById('actionModalBody');
+      const ROLE_META = {
+        user:{label:'Користувач', desc:'Базове шифрування файлів', icon:'assets/role-user.svg'},
+        operator:{label:'Оператор', desc:'Розшифрування в межах контуру', icon:'assets/role-operator.svg'},
+        admin:{label:'Адміністратор', desc:'Керування користувачами і контурами', icon:'assets/role-admin.svg'},
+        super_admin:{label:'Суперадміністратор', desc:'Повні права системи', icon:'assets/role-superadmin.svg'}
+      };
 
       function setNotice(text, type='') { notice.innerHTML = text ? `<div class="notice ${type}">${A.esc(text)}</div>` : ''; }
       function sameUserMembership(m, u){ return String(m.user_id || '') === String(u.id) || String(m.email || '').toLowerCase() === String(u.email || '').toLowerCase(); }
@@ -189,13 +198,8 @@
         if (already) { setNotice('Цей контур уже доданий користувачу.', ''); return; }
         const contour = state.contours.find(c => String(c.id) === String(contourId));
         const { error } = await supabase.from('rebus_contour_members').insert({
-          contour_id: contourId,
-          user_id: u.id,
-          email: u.email,
-          role: u.role,
-          marker: u.marker,
-          added_by: ctx.session?.user?.email || null,
-          created_at: new Date().toISOString()
+          contour_id: contourId, user_id: u.id, email: u.email, role: u.role, marker: u.marker,
+          added_by: ctx.session?.user?.email || null, created_at: new Date().toISOString()
         });
         if (error) { setNotice(error.message || 'Не вдалося додати контур.', 'error'); return; }
         await A.logEvent(supabase, { marker:u.marker, email:u.email, action:`Додано до контуру: ${contour?.name || contourId}`, status:'success' });
@@ -258,13 +262,19 @@
 
       function openStatusModal(id){
         const u = state.users.find(x => String(x.id) === String(id)); if (!u) return;
+        const isActive = u.status === 'active';
+        const nextStatus = isActive ? 'inactive' : 'active';
         actionModalKicker.textContent = 'Статус користувача'; actionModalTitle.textContent = u.marker || 'Користувач';
         actionModalSub.textContent = `${u.email} · ${A.roleLabel(u.role)} · ${A.statusLabel(u.status)}`;
-        actionModalBody.className = 'action-grid';
+        actionModalBody.className = 'status-toggle-layout';
         actionModalBody.innerHTML = `
-          <button class="action-tile" data-action="status" data-value="active" data-id="${A.esc(u.id)}"><span>●</span><div><strong>Активувати</strong><small>Дозволити роботу в системі</small></div></button>
-          <button class="action-tile" data-action="status" data-value="inactive" data-id="${A.esc(u.id)}"><span>●</span><div><strong>Деактивувати</strong><small>Тимчасово вимкнути доступ</small></div></button>
-          <button class="action-tile danger" data-action="status" data-value="deleted" data-id="${A.esc(u.id)}"><span>🗑️</span><div><strong>Видалити</strong><small>Позначити обліковий запис як видалений</small></div></button>`;
+          <button class="status-toggle-card ${isActive ? 'is-active' : 'is-inactive'}" data-action="status" data-value="${nextStatus}" data-id="${A.esc(u.id)}" type="button">
+            <span class="status-toggle-switch"><span></span></span>
+            <div><strong>${isActive ? 'Активований' : 'Неактивний'}</strong><small>${isActive ? 'Натисни, щоб деактивувати доступ' : 'Натисни, щоб активувати доступ'}</small></div>
+          </button>
+          <button class="action-tile danger delete-user-tile" data-action="status" data-value="deleted" data-id="${A.esc(u.id)}" type="button">
+            <span class="role-choice-icon">🗑️</span><div><strong>Видалити</strong><small>Позначити обліковий запис як видалений</small></div>
+          </button>`;
         showModal();
       }
 
@@ -272,12 +282,15 @@
         const u = state.users.find(x => String(x.id) === String(id)); if (!u) return;
         actionModalKicker.textContent = 'Зміна ролі'; actionModalTitle.textContent = u.marker || 'Користувач';
         actionModalSub.textContent = `${u.email} · поточна роль: ${A.roleLabel(u.role)}`;
-        actionModalBody.className = 'action-grid';
-        actionModalBody.innerHTML = `
-          <button class="action-tile" data-action="role" data-value="user" data-id="${A.esc(u.id)}"><span>👤</span><div><strong>Користувач</strong><small>Базове шифрування файлів</small></div></button>
-          <button class="action-tile" data-action="role" data-value="operator" data-id="${A.esc(u.id)}"><span>🛡️</span><div><strong>Оператор</strong><small>Розшифрування в межах контуру</small></div></button>
-          <button class="action-tile" data-action="role" data-value="admin" data-id="${A.esc(u.id)}"><span>👑</span><div><strong>Адміністратор</strong><small>Керування користувачами і контурами</small></div></button>
-          <button class="action-tile" data-action="role" data-value="super_admin" data-id="${A.esc(u.id)}"><span>◆</span><div><strong>Суперадміністратор</strong><small>Повні права системи</small></div></button>`;
+        actionModalBody.className = 'action-grid role-picker-grid';
+        actionModalBody.innerHTML = Object.entries(ROLE_META).map(([role, meta]) => {
+          const current = A.normalizeRole(u.role) === role;
+          return `<button class="action-tile role-choice-tile role-choice-card ${current ? 'current-role' : ''}" data-action="role" data-value="${role}" data-id="${A.esc(u.id)}" type="button">
+            ${current ? '<span class="current-role-badge">Поточна роль</span>' : ''}
+            <span class="role-choice-icon"><img src="${meta.icon}" alt=""></span>
+            <div><strong>${meta.label}</strong><small>${meta.desc}</small></div>
+          </button>`;
+        }).join('');
         showModal();
       }
 
