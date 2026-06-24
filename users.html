@@ -54,7 +54,7 @@
                 <th class="sortable" data-sort="marker">Маркер ⇅</th>
                 <th class="sortable" data-sort="email">Email ⇅</th>
                 <th class="sortable" data-sort="role">Роль ⇅</th>
-                <th class="sortable" data-sort="contour_name">Контур ⇅</th>
+                <th class="sortable" data-sort="contour_count">Контур ⇅</th>
                 <th class="sortable" data-sort="status">Статус ⇅</th>
                 <th class="sortable" data-sort="last_login">Останній вхід ⇅</th>
                 <th class="sortable" data-sort="created_at">Створений ⇅</th>
@@ -99,6 +99,7 @@
       const actionModalBody = document.getElementById('actionModalBody');
 
       function setNotice(text, type='') { notice.innerHTML = text ? `<div class="notice ${type}">${A.esc(text)}</div>` : ''; }
+      function sameUserMembership(m, u){ return String(m.user_id || '') === String(u.id) || String(m.email || '').toLowerCase() === String(u.email || '').toLowerCase(); }
 
       async function loadUsers(){
         usersBody.innerHTML = '<tr><td colspan="8">Завантаження...</td></tr>';
@@ -133,30 +134,86 @@
       }
 
       function applyContourNames(){
-        const activeContours = new Map(state.contours.map(c => [String(c.id), c]));
+        const contourMap = new Map(state.contours.map(c => [String(c.id), c]));
         state.users.forEach(u => {
-          const membership = state.memberships.find(m => String(m.user_id || '') === String(u.id) || String(m.email || '').toLowerCase() === String(u.email || '').toLowerCase());
-          u.contour_id = membership?.contour_id || '';
-          u.contour_name = activeContours.get(String(u.contour_id))?.name || 'Без контуру';
+          const memberships = state.memberships.filter(m => sameUserMembership(m, u));
+          const contours = memberships.map(m => ({ membership: m, contour: contourMap.get(String(m.contour_id)) })).filter(x => x.contour);
+          u.contour_memberships = contours;
+          u.contour_count = contours.length;
+          u.contour_name = contours.length ? contours.map(x => x.contour.name).join(', ') : 'Без контуру';
         });
       }
 
-      function contourSelect(u){
-        const options = ['<option value="">Без контуру</option>'].concat(state.contours.filter(c => c.is_active !== false).map(c => `<option value="${A.esc(c.id)}" ${String(c.id)===String(u.contour_id)?'selected':''}>${A.esc(c.name)}</option>`)).join('');
-        return `<select class="contour-select" data-contour-user="${A.esc(u.id)}" ${state.contoursAvailable ? '' : 'disabled'}>${options}</select>`;
+      function contourCountButton(u){
+        const count = Number(u.contour_count || 0);
+        const label = count === 1 ? 'контур' : count > 1 && count < 5 ? 'контури' : 'контурів';
+        return `<button class="contour-count-btn ${count ? 'has-contours' : ''}" data-open-contours="${A.esc(u.id)}" type="button"><strong>${count}</strong><span>${label}</span></button>`;
       }
 
-      async function updateUserContour(userId, contourId){
-        const u = state.users.find(x => String(x.id) === String(userId)); if (!u || !state.contoursAvailable) return;
-        setNotice('Оновлюю контур користувача...', '');
-        const existing = state.memberships.filter(m => String(m.user_id || '') === String(u.id) || String(m.email || '').toLowerCase() === String(u.email || '').toLowerCase());
-        for (const m of existing) await supabase.from('rebus_contour_members').delete().eq('id', m.id);
-        if (contourId) {
-          const { error } = await supabase.from('rebus_contour_members').insert({ contour_id: contourId, user_id: u.id, email: u.email, role: u.role, marker: u.marker, added_by: ctx.session?.user?.email || null, created_at: new Date().toISOString() });
-          if (error) { setNotice(error.message || 'Не вдалося призначити контур.', 'error'); return; }
-        }
-        await A.logEvent(supabase, { marker:u.marker, email:u.email, action: contourId ? `Призначено контур: ${(state.contours.find(c=>String(c.id)===String(contourId))||{}).name || contourId}` : 'Контур знято', status:'success' });
-        await loadContours(); applyContourNames(); setNotice('Контур користувача оновлено.', 'ok'); render();
+      function availableContoursFor(u){
+        const assigned = new Set((u.contour_memberships || []).map(x => String(x.contour.id)));
+        return state.contours.filter(c => c.is_active !== false && !assigned.has(String(c.id)));
+      }
+
+      function openContourModal(id){
+        const u = state.users.find(x => String(x.id) === String(id)); if (!u) return;
+        actionModalKicker.textContent = 'Контури доступу'; actionModalTitle.textContent = u.marker || 'Користувач';
+        actionModalSub.textContent = `${u.email} · ${u.contour_count || 0} контурів`;
+        renderContourModalBody(u);
+        showModal();
+      }
+
+      function renderContourModalBody(u){
+        const memberships = u.contour_memberships || [];
+        const available = availableContoursFor(u);
+        const currentHtml = memberships.length ? memberships.map(({ membership, contour }) => `
+          <div class="contour-item">
+            <div><strong>${A.esc(contour.name)}</strong><small>${A.esc(contour.description || 'Без опису')}</small></div>
+            <button class="contour-remove-btn" data-remove-contour="${A.esc(membership.id)}" data-user-id="${A.esc(u.id)}" type="button">Прибрати</button>
+          </div>`).join('') : '<div class="contour-empty">Користувач ще не належить до жодного контуру</div>';
+        const addHtml = available.length ? `
+          <div class="contour-add-row">
+            <select class="contour-add-select" data-add-contour-select="${A.esc(u.id)}">
+              <option value="">Обери контур для додавання</option>
+              ${available.map(c => `<option value="${A.esc(c.id)}">${A.esc(c.name)}</option>`).join('')}
+            </select>
+            <button class="btn contour-add-btn" data-add-contour-user="${A.esc(u.id)}" type="button">Додати</button>
+          </div>` : '<div class="contour-empty">Усі активні контури вже додані</div>';
+        actionModalBody.className = 'contour-modal-body';
+        actionModalBody.innerHTML = `<div class="contour-list">${currentHtml}</div>${addHtml}`;
+      }
+
+      async function addUserContour(userId, contourId){
+        const u = state.users.find(x => String(x.id) === String(userId)); if (!u || !contourId) return;
+        const already = state.memberships.some(m => sameUserMembership(m, u) && String(m.contour_id) === String(contourId));
+        if (already) { setNotice('Цей контур уже доданий користувачу.', ''); return; }
+        const contour = state.contours.find(c => String(c.id) === String(contourId));
+        const { error } = await supabase.from('rebus_contour_members').insert({
+          contour_id: contourId,
+          user_id: u.id,
+          email: u.email,
+          role: u.role,
+          marker: u.marker,
+          added_by: ctx.session?.user?.email || null,
+          created_at: new Date().toISOString()
+        });
+        if (error) { setNotice(error.message || 'Не вдалося додати контур.', 'error'); return; }
+        await A.logEvent(supabase, { marker:u.marker, email:u.email, action:`Додано до контуру: ${contour?.name || contourId}`, status:'success' });
+        await loadContours(); applyContourNames(); render();
+        const fresh = state.users.find(x => String(x.id) === String(userId)); if (fresh && !actionModal.hidden) { actionModalSub.textContent = `${fresh.email} · ${fresh.contour_count || 0} контурів`; renderContourModalBody(fresh); }
+        setNotice('Контур додано користувачу.', 'ok');
+      }
+
+      async function removeUserContour(userId, membershipId){
+        const u = state.users.find(x => String(x.id) === String(userId)); if (!u || !membershipId) return;
+        const membership = state.memberships.find(m => String(m.id) === String(membershipId));
+        const contour = state.contours.find(c => String(c.id) === String(membership?.contour_id));
+        const { error } = await supabase.from('rebus_contour_members').delete().eq('id', membershipId);
+        if (error) { setNotice(error.message || 'Не вдалося прибрати контур.', 'error'); return; }
+        await A.logEvent(supabase, { marker:u.marker, email:u.email, action:`Прибрано з контуру: ${contour?.name || membershipId}`, status:'success' });
+        await loadContours(); applyContourNames(); render();
+        const fresh = state.users.find(x => String(x.id) === String(userId)); if (fresh && !actionModal.hidden) { actionModalSub.textContent = `${fresh.email} · ${fresh.contour_count || 0} контурів`; renderContourModalBody(fresh); }
+        setNotice('Контур прибрано.', 'ok');
       }
 
       function filtered(){
@@ -164,7 +221,12 @@
         if (state.filter !== 'all') list = list.filter(u => u.status === state.filter);
         const q = state.query.trim().toLowerCase();
         if (q) list = list.filter(u => [u.marker,u.email,u.full_name,A.roleLabel(u.role),u.contour_name,u.status].join(' ').toLowerCase().includes(q));
-        list.sort((a,b) => String(a[state.sort] || '').localeCompare(String(b[state.sort] || ''), 'uk', { numeric:true }) * state.dir);
+        list.sort((a,b) => {
+          const av = a[state.sort] ?? '';
+          const bv = b[state.sort] ?? '';
+          if (typeof av === 'number' || typeof bv === 'number') return (Number(av) - Number(bv)) * state.dir;
+          return String(av).localeCompare(String(bv), 'uk', { numeric:true }) * state.dir;
+        });
         return list;
       }
 
@@ -187,7 +249,7 @@
           <td>${A.esc(u.marker)}</td>
           <td><div class="user-cell">${avatar}<div><div class="email-main">${A.esc(u.email)}</div><div class="email-sub">${A.esc(u.full_name || u.email)}</div></div></div></td>
           <td><button class="role-edit-btn role-badge role-${A.esc(u.role)}" data-open-role="${A.esc(u.id)}" type="button">${A.esc(A.roleLabel(u.role))}</button></td>
-          <td>${contourSelect(u)}</td>
+          <td>${contourCountButton(u)}</td>
           <td><span class="status-badge status-${A.esc(u.status)}">${A.esc(A.statusLabel(u.status))}</span></td>
           <td>${A.esc(A.fmtDate(u.last_login))}</td><td>${A.esc(A.fmtDate(u.created_at))}</td>
           <td><button class="dots-btn" data-open-status="${A.esc(u.id)}" type="button" aria-label="Дії користувача">⋮</button></td>
@@ -198,6 +260,7 @@
         const u = state.users.find(x => String(x.id) === String(id)); if (!u) return;
         actionModalKicker.textContent = 'Статус користувача'; actionModalTitle.textContent = u.marker || 'Користувач';
         actionModalSub.textContent = `${u.email} · ${A.roleLabel(u.role)} · ${A.statusLabel(u.status)}`;
+        actionModalBody.className = 'action-grid';
         actionModalBody.innerHTML = `
           <button class="action-tile" data-action="status" data-value="active" data-id="${A.esc(u.id)}"><span>●</span><div><strong>Активувати</strong><small>Дозволити роботу в системі</small></div></button>
           <button class="action-tile" data-action="status" data-value="inactive" data-id="${A.esc(u.id)}"><span>●</span><div><strong>Деактивувати</strong><small>Тимчасово вимкнути доступ</small></div></button>
@@ -209,6 +272,7 @@
         const u = state.users.find(x => String(x.id) === String(id)); if (!u) return;
         actionModalKicker.textContent = 'Зміна ролі'; actionModalTitle.textContent = u.marker || 'Користувач';
         actionModalSub.textContent = `${u.email} · поточна роль: ${A.roleLabel(u.role)}`;
+        actionModalBody.className = 'action-grid';
         actionModalBody.innerHTML = `
           <button class="action-tile" data-action="role" data-value="user" data-id="${A.esc(u.id)}"><span>👤</span><div><strong>Користувач</strong><small>Базове шифрування файлів</small></div></button>
           <button class="action-tile" data-action="role" data-value="operator" data-id="${A.esc(u.id)}"><span>🛡️</span><div><strong>Оператор</strong><small>Розшифрування в межах контуру</small></div></button>
@@ -218,7 +282,7 @@
       }
 
       function showModal(){ actionModal.hidden = false; requestAnimationFrame(() => actionModal.classList.add('open')); }
-      function closeActionsModal(){ actionModal.classList.remove('open'); setTimeout(() => { actionModal.hidden = true; }, 160); }
+      function closeActionsModal(){ actionModal.classList.remove('open'); setTimeout(() => { actionModal.hidden = true; actionModalBody.className = 'action-grid'; }, 160); }
 
       async function updateUser(id, patch){
         const u = state.users.find(x => String(x.id) === String(id)); if (!u) return;
@@ -245,8 +309,10 @@
       prevPage.onclick = () => { state.page=Math.max(1,state.page-1); render(); }; nextPage.onclick = () => { state.page+=1; render(); };
       closeActionModal.onclick = closeActionsModal; actionModal.addEventListener('click', e => { if (e.target === actionModal) closeActionsModal(); });
       document.addEventListener('keydown', e => { if (e.key === 'Escape' && !actionModal.hidden) closeActionsModal(); });
-      document.addEventListener('change', e => { const select = e.target.closest('[data-contour-user]'); if (select) updateUserContour(select.dataset.contourUser, select.value); });
       document.addEventListener('click', e => {
+        const contourBtn = e.target.closest('[data-open-contours]'); if (contourBtn) { openContourModal(contourBtn.dataset.openContours); return; }
+        const removeContourBtn = e.target.closest('[data-remove-contour]'); if (removeContourBtn) { removeUserContour(removeContourBtn.dataset.userId, removeContourBtn.dataset.removeContour); return; }
+        const addContourBtn = e.target.closest('[data-add-contour-user]'); if (addContourBtn) { const select = document.querySelector(`[data-add-contour-select="${CSS.escape(addContourBtn.dataset.addContourUser)}"]`); addUserContour(addContourBtn.dataset.addContourUser, select?.value || ''); return; }
         const statusBtn = e.target.closest('[data-open-status]'); if (statusBtn) { openStatusModal(statusBtn.dataset.openStatus); return; }
         const roleBtn = e.target.closest('[data-open-role]'); if (roleBtn) { openRoleModal(roleBtn.dataset.openRole); return; }
         const action = e.target.closest('[data-action]'); if (action) updateUser(action.dataset.id, { [action.dataset.action]: action.dataset.value });
