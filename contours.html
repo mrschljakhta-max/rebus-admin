@@ -4,10 +4,10 @@
   <title>REBUS — Контури доступу</title>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="icon" type="image/png" href="assets/favicon.png?v=20260624-contours-v2" />
-  <link rel="shortcut icon" type="image/png" href="assets/favicon.png?v=20260624-contours-v2" />
-  <link rel="apple-touch-icon" href="assets/favicon.png?v=20260624-contours-v2" />
-  <link rel="stylesheet" href="css/styles.css?v=20260624-contours-v2" />
+  <link rel="icon" type="image/png" href="assets/favicon.png?v=20260624-contours-v3" />
+  <link rel="shortcut icon" type="image/png" href="assets/favicon.png?v=20260624-contours-v3" />
+  <link rel="apple-touch-icon" href="assets/favicon.png?v=20260624-contours-v3" />
+  <link rel="stylesheet" href="css/styles.css?v=20260624-contours-v3" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/config.js"></script>
   <script src="js/auth.js" defer></script>
@@ -21,48 +21,71 @@
       <div class="sidebar-footer"><button id="logoutBtn" class="logout-btn" type="button">Вийти</button></div>
     </aside>
 
-    <main class="main">
+    <main class="main contours-page">
       <div class="topbar"><h2>Контури доступу</h2><div class="user-pill" id="adminEmail"></div></div>
 
-      <section class="panel">
-        <div class="panel-header"><h3>Створити контур</h3></div>
-        <div class="form-card-body">
-          <div class="form-grid">
-            <div class="field"><label>Назва контуру</label><input id="contourName" placeholder="Секція SEW"></div>
-            <div class="field"><label>Опис</label><input id="contourDescription" placeholder="необов'язково"></div>
+      <section class="panel table-panel contours-list-panel">
+        <div class="panel-header contours-header">
+          <h3>Список контурів</h3>
+          <div class="contours-header-actions">
+            <button id="openCreateContour" class="add-contour-btn" type="button" title="Створити контур" aria-label="Створити контур">
+              <img src="assets/add-contour.png" alt="">
+            </button>
+            <button id="reloadContours" class="small-btn">Оновити</button>
           </div>
-          <div class="actions"><button id="createContourBtn" class="btn">Створити контур</button></div>
-          <div id="contoursStatus" class="status"></div>
         </div>
-      </section>
-
-      <section class="panel table-panel">
-        <div class="panel-header"><h3>Список контурів</h3><button id="reloadContours" class="small-btn">Оновити</button></div>
         <div id="notice"></div>
         <div class="table-wrap">
-          <table class="table">
+          <table class="table contours-table">
             <thead><tr><th>Назва</th><th>Опис</th><th>Учасники</th><th>Статус</th><th>Створено</th><th>Дії</th></tr></thead>
             <tbody id="contoursBody"><tr><td colspan="6">Завантаження...</td></tr></tbody>
           </table>
         </div>
       </section>
-
-      <section class="panel" id="membersPanel" hidden>
-        <div class="panel-header"><h3 id="membersTitle">Учасники контуру</h3></div>
-        <div class="form-card-body compact">
-          <div class="form-grid">
-            <div class="field"><label>Додати користувача до вибраного контуру</label><select id="memberSelect"></select></div>
-            <div class="field"><label>&nbsp;</label><button id="addMemberBtn" class="btn">Додати до контуру</button></div>
-          </div>
-        </div>
-        <div class="table-wrap">
-          <table class="table">
-            <thead><tr><th>Маркер</th><th>Email</th><th>Роль</th><th>Додано</th><th>Дії</th></tr></thead>
-            <tbody id="membersBody"><tr><td colspan="5">Оберіть контур</td></tr></tbody>
-          </table>
-        </div>
-      </section>
     </main>
+  </div>
+
+  <div id="createContourModal" class="modal-backdrop rebus-modal-backdrop" hidden>
+    <div class="modal contour-dialog create-contour-dialog" role="dialog" aria-modal="true" aria-labelledby="createContourTitle">
+      <button class="modal-close" type="button" data-close-modal aria-label="Закрити">×</button>
+      <div class="modal-kicker">Новий контур</div>
+      <h3 id="createContourTitle">Створити контур</h3>
+      <p class="modal-subtitle">Створи окремий контур доступу для групи користувачів та операторів.</p>
+      <div class="contour-modal-form">
+        <div class="field"><label>Назва контуру</label><input id="contourName" placeholder="Секція SEW"></div>
+        <div class="field"><label>Опис</label><input id="contourDescription" placeholder="необов'язково"></div>
+      </div>
+      <div id="contoursStatus" class="status"></div>
+      <div class="modal-actions"><button class="small-btn" type="button" data-close-modal>Скасувати</button><button id="createContourBtn" class="btn" type="button">Створити контур</button></div>
+    </div>
+  </div>
+
+  <div id="contourDetailsModal" class="modal-backdrop rebus-modal-backdrop" hidden>
+    <div class="modal contour-dialog contour-details-dialog" role="dialog" aria-modal="true" aria-labelledby="detailsContourTitle">
+      <button class="modal-close" type="button" data-close-modal aria-label="Закрити">×</button>
+      <div class="modal-kicker">Керування контуром</div>
+      <h3 id="detailsContourTitle">Контур</h3>
+      <p class="modal-subtitle" id="detailsContourSubtitle">Перейменування, учасники та доступ.</p>
+
+      <div class="contour-detail-grid">
+        <div class="field"><label>Назва контуру</label><input id="detailContourName" placeholder="Назва"></div>
+        <div class="field"><label>Опис</label><input id="detailContourDescription" placeholder="необов'язково"></div>
+        <div class="field detail-save-field"><label>&nbsp;</label><button id="saveContourBtn" class="btn" type="button">Зберегти зміни</button></div>
+      </div>
+
+      <div class="contour-members-toolbar">
+        <div class="field"><label>Додати учасника</label><select id="memberSelect"></select></div>
+        <button id="addMemberBtn" class="btn" type="button">Додати</button>
+      </div>
+
+      <div class="contour-members-list">
+        <table class="table compact-table">
+          <thead><tr><th>Маркер</th><th>Email</th><th>Роль</th><th>Додано</th><th>Дії</th></tr></thead>
+          <tbody id="membersBody"><tr><td colspan="5">Оберіть контур</td></tr></tbody>
+        </table>
+      </div>
+      <div id="detailStatus" class="status"></div>
+    </div>
   </div>
 
   <script>
@@ -76,15 +99,21 @@
       const body = document.getElementById('contoursBody');
       const notice = document.getElementById('notice');
       const status = document.getElementById('contoursStatus');
-      const membersPanel = document.getElementById('membersPanel');
+      const detailStatus = document.getElementById('detailStatus');
+      const createModal = document.getElementById('createContourModal');
+      const detailModal = document.getElementById('contourDetailsModal');
       const membersBody = document.getElementById('membersBody');
       const memberSelect = document.getElementById('memberSelect');
 
       function setStatus(text, cls='') { status.textContent = text || ''; status.className = cls ? `status ${cls}` : 'status'; }
+      function setDetailStatus(text, cls='') { detailStatus.textContent = text || ''; detailStatus.className = cls ? `status ${cls}` : 'status'; }
       function setNotice(text, cls='') { notice.innerHTML = text ? `<div class="notice ${cls}">${A.esc(text)}</div>` : ''; }
       function selectedContour(){ return state.contours.find(c => String(c.id) === String(state.selectedContourId)); }
       function userByMembership(m){ return state.users.find(u => String(u.id) === String(m.user_id || '') || String(u.email||'').toLowerCase() === String(m.email||'').toLowerCase()); }
       function contourMembers(contourId){ return state.memberships.filter(m => String(m.contour_id) === String(contourId)); }
+      function openModal(modal){ if (!modal) return; modal.hidden = false; requestAnimationFrame(() => modal.classList.add('open')); }
+      function closeModal(modal){ if (!modal) return; modal.classList.remove('open'); setTimeout(() => { modal.hidden = true; }, 160); }
+      function closeAllModals(){ closeModal(createModal); closeModal(detailModal); }
 
       async function loadAll(){
         body.innerHTML = '<tr><td colspan="6">Завантаження...</td></tr>';
@@ -107,7 +136,6 @@
         }
         state.contours = contoursResp.data || [];
         state.memberships = membersResp.data || [];
-        if (!state.selectedContourId && state.contours[0]) state.selectedContourId = state.contours[0].id;
         render();
       }
 
@@ -115,23 +143,41 @@
         body.innerHTML = state.contours.length ? state.contours.map(c => {
           const count = contourMembers(c.id).length;
           const active = c.is_active !== false;
-          return `<tr class="${String(c.id)===String(state.selectedContourId)?'selected-row':''}">
+          return `<tr class="contour-row" data-open-contour="${A.esc(c.id)}">
             <td><strong>${A.esc(c.name)}</strong></td>
             <td>${A.esc(c.description || '—')}</td>
-            <td><span class="contour-pill">${count}</span></td>
+            <td><button class="contour-pill contour-pill-button" data-open-contour="${A.esc(c.id)}" type="button">${count}</button></td>
             <td><span class="tag ${active?'':'off'}">${active?'Активний':'Вимкнений'}</span></td>
             <td>${A.esc(A.fmtDate(c.created_at))}</td>
-            <td class="row-actions"><button class="small-btn" data-open-contour="${A.esc(c.id)}">Учасники</button><button class="small-btn ${active?'danger':''}" data-toggle-contour="${A.esc(c.id)}">${active?'Вимкнути':'Активувати'}</button></td>
+            <td class="row-actions"><button class="small-btn" data-open-contour="${A.esc(c.id)}" type="button">Керувати</button><button class="small-btn ${active?'danger':''}" data-toggle-contour="${A.esc(c.id)}" type="button">${active?'Вимкнути':'Активувати'}</button></td>
           </tr>`;
-        }).join('') : '<tr><td colspan="6">Контурів ще немає</td></tr>';
+        }).join('') : '<tr><td colspan="6">Контурів ще немає. Натисни плюс, щоб створити перший контур.</td></tr>';
+      }
+
+      function openCreateContour(){
+        document.getElementById('contourName').value = '';
+        document.getElementById('contourDescription').value = '';
+        setStatus('');
+        openModal(createModal);
+        setTimeout(() => document.getElementById('contourName')?.focus(), 80);
+      }
+
+      function openContourDetails(contourId){
+        state.selectedContourId = contourId;
+        const c = selectedContour();
+        if (!c) return;
+        document.getElementById('detailsContourTitle').textContent = c.name;
+        document.getElementById('detailsContourSubtitle').textContent = `${contourMembers(c.id).length} учасників · ${c.is_active !== false ? 'активний' : 'вимкнений'}`;
+        document.getElementById('detailContourName').value = c.name || '';
+        document.getElementById('detailContourDescription').value = c.description || '';
+        setDetailStatus('');
         renderMembers();
+        openModal(detailModal);
       }
 
       function renderMembers(){
         const c = selectedContour();
-        if (!c) { membersPanel.hidden = true; return; }
-        membersPanel.hidden = false;
-        document.getElementById('membersTitle').textContent = `Учасники контуру: ${c.name}`;
+        if (!c) return;
         const members = contourMembers(c.id);
         const memberKeys = new Set(members.map(m => String(m.user_id || m.email || '').toLowerCase()));
         const available = state.users.filter(u => !memberKeys.has(String(u.id).toLowerCase()) && !memberKeys.has(String(u.email).toLowerCase()) && u.status !== 'deleted');
@@ -139,7 +185,7 @@
         membersBody.innerHTML = members.length ? members.map(m => {
           const u = userByMembership(m) || {};
           const id = A.esc(m.id);
-          return `<tr><td>${A.esc(m.marker || u.marker || '—')}</td><td>${A.esc(m.email || u.email || '—')}</td><td>${A.esc(A.roleLabel(m.role || u.role))}</td><td>${A.esc(A.fmtDate(m.created_at))}</td><td><button class="small-btn danger" data-remove-member="${id}">Прибрати</button></td></tr>`;
+          return `<tr><td>${A.esc(m.marker || u.marker || '—')}</td><td>${A.esc(m.email || u.email || '—')}</td><td>${A.esc(A.roleLabel(m.role || u.role))}</td><td>${A.esc(A.fmtDate(m.created_at))}</td><td><button class="small-btn danger" data-remove-member="${id}" type="button">Прибрати</button></td></tr>`;
         }).join('') : '<tr><td colspan="5">У цьому контурі ще немає учасників</td></tr>';
       }
 
@@ -151,35 +197,52 @@
         const { data, error } = await supabase.from('rebus_contours').insert({ name, description, is_active:true, created_by: ctx.session?.user?.email || null }).select().single();
         if (error) { setStatus(error.message || 'Не вдалося створити контур.', 'error'); return; }
         await A.logEvent(supabase, { marker:'ADMIN', email:ctx.session?.user?.email || '', action:`Створено контур: ${name}`, status:'success' });
-        document.getElementById('contourName').value = '';
-        document.getElementById('contourDescription').value = '';
-        state.selectedContourId = data?.id || state.selectedContourId;
         setStatus('Контур створено.', 'ok');
+        closeModal(createModal);
         await loadAll();
+        if (data?.id) openContourDetails(data.id);
+      }
+
+      async function saveContour(){
+        const c = selectedContour(); if (!c) return;
+        const name = document.getElementById('detailContourName').value.trim();
+        const description = document.getElementById('detailContourDescription').value.trim();
+        if (!name) { setDetailStatus('Вкажи назву контуру.', 'error'); return; }
+        setDetailStatus('Зберігаю зміни...');
+        const { error } = await supabase.from('rebus_contours').update({ name, description, updated_at: new Date().toISOString() }).eq('id', c.id);
+        if (error) { setDetailStatus(error.message || 'Не вдалося перейменувати контур.', 'error'); return; }
+        await A.logEvent(supabase, { marker:'ADMIN', email:ctx.session?.user?.email || '', action:`Оновлено контур: ${name}`, status:'success' });
+        setDetailStatus('Зміни збережено.', 'ok');
+        await loadAll();
+        state.selectedContourId = c.id;
+        openContourDetails(c.id);
       }
 
       async function addMember(){
         const c = selectedContour();
         const user = state.users.find(u => String(u.id) === String(memberSelect.value));
         if (!c || !user) return;
-        setStatus('Додаю користувача до контуру...');
+        setDetailStatus('Додаю користувача до контуру...');
         const previous = state.memberships.filter(m => String(m.user_id || '') === String(user.id) || String(m.email || '').toLowerCase() === String(user.email || '').toLowerCase());
         for (const m of previous) await supabase.from('rebus_contour_members').delete().eq('id', m.id);
         const { error } = await supabase.from('rebus_contour_members').insert({ contour_id:c.id, user_id:user.id, email:user.email, marker:user.marker, role:user.role, added_by:ctx.session?.user?.email || null });
-        if (error) { setStatus(error.message || 'Не вдалося додати учасника.', 'error'); return; }
+        if (error) { setDetailStatus(error.message || 'Не вдалося додати учасника.', 'error'); return; }
         await A.logEvent(supabase, { marker:user.marker, email:user.email, action:`Додано до контуру: ${c.name}`, status:'success' });
-        setStatus('Учасника додано до контуру.', 'ok');
+        setDetailStatus('Учасника додано до контуру.', 'ok');
         await loadAll();
+        state.selectedContourId = c.id;
+        renderMembers();
       }
 
       async function removeMember(memberId){
         const m = state.memberships.find(x => String(x.id) === String(memberId));
         const c = selectedContour();
         const { error } = await supabase.from('rebus_contour_members').delete().eq('id', memberId);
-        if (error) { setStatus(error.message || 'Не вдалося прибрати учасника.', 'error'); return; }
+        if (error) { setDetailStatus(error.message || 'Не вдалося прибрати учасника.', 'error'); return; }
         await A.logEvent(supabase, { marker:m?.marker || '—', email:m?.email || '', action:`Прибрано з контуру: ${c?.name || ''}`, status:'success' });
-        setStatus('Учасника прибрано з контуру.', 'ok');
+        setDetailStatus('Учасника прибрано з контуру.', 'ok');
         await loadAll();
+        if (c) { state.selectedContourId = c.id; renderMembers(); }
       }
 
       async function toggleContour(contourId){
@@ -187,22 +250,26 @@
         if (!c) return;
         const next = c.is_active === false;
         const { error } = await supabase.from('rebus_contours').update({ is_active: next, updated_at: new Date().toISOString() }).eq('id', contourId);
-        if (error) { setStatus(error.message || 'Не вдалося оновити контур.', 'error'); return; }
+        if (error) { setNotice(error.message || 'Не вдалося оновити контур.', 'error'); return; }
         await A.logEvent(supabase, { marker:'ADMIN', email:ctx.session?.user?.email || '', action:`${next?'Активовано':'Вимкнено'} контур: ${c.name}`, status:'success' });
         await loadAll();
       }
 
+      document.getElementById('openCreateContour').onclick = openCreateContour;
       document.getElementById('createContourBtn').onclick = createContour;
       document.getElementById('reloadContours').onclick = loadAll;
       document.getElementById('addMemberBtn').onclick = addMember;
+      document.getElementById('saveContourBtn').onclick = saveContour;
       document.addEventListener('click', e => {
-        const open = e.target.closest('[data-open-contour]');
-        if (open) { state.selectedContourId = open.dataset.openContour; render(); return; }
-        const toggle = e.target.closest('[data-toggle-contour]');
-        if (toggle) { toggleContour(toggle.dataset.toggleContour); return; }
+        if (e.target.closest('[data-close-modal]') || e.target.classList.contains('rebus-modal-backdrop')) { closeAllModals(); return; }
         const remove = e.target.closest('[data-remove-member]');
-        if (remove) { removeMember(remove.dataset.removeMember); }
+        if (remove) { removeMember(remove.dataset.removeMember); return; }
+        const toggle = e.target.closest('[data-toggle-contour]');
+        if (toggle) { e.stopPropagation(); toggleContour(toggle.dataset.toggleContour); return; }
+        const open = e.target.closest('[data-open-contour]');
+        if (open) { openContourDetails(open.dataset.openContour); }
       });
+      document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAllModals(); });
       await loadAll();
     });
   </script>
