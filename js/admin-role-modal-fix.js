@@ -39,7 +39,6 @@
       const current = role === currentRole;
       return `
         <button class="action-tile role-choice-tile ${current ? 'current-role' : ''}" data-action="role" data-value="${role}" data-id="${A.esc(id)}" type="button">
-          ${current ? '<span class="current-role-badge">Поточна роль</span>' : ''}
           <span class="role-choice-icon" aria-hidden="true">${meta.icon}</span>
           <div>
             <strong>${meta.label}</strong>

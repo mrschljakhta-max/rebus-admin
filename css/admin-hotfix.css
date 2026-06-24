@@ -93,20 +93,7 @@
   box-shadow: 0 0 0 1px rgba(255,107,139,.18), 0 22px 60px rgba(157,24,52,.22);
 }
 
-.current-role-badge {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  padding: 5px 9px;
-  border-radius: 999px;
-  background: rgba(255,107,139,.18);
-  border: 1px solid rgba(255,107,139,.38);
-  color: #ff8ca4;
-  font-size: 10px;
-  font-weight: 950;
-  letter-spacing: .06em;
-  text-transform: uppercase;
-}
+.current-role-badge{display:none!important;}
 
 .role-choice-icon {
   width: 52px;
