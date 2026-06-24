@@ -1,5 +1,16 @@
 (function(){
   const cfg = window.REBUS_CONFIG || {};
+
+  function injectAdminSidebarStyles(){
+    if (document.querySelector('link[data-rebus-sidebar-collapse]')) return;
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'css/admin-sidebar-collapse.css?v=20260624-sidebar-collapse';
+    link.dataset.rebusSidebarCollapse = 'true';
+    document.head.appendChild(link);
+  }
+  injectAdminSidebarStyles();
+
   const STATUS_LABELS = { active:'Активний', inactive:'Неактивний', deleted:'Видалений' };
   const ROLE_LABELS = { user:'Користувач', operator:'Оператор', admin:'Адміністратор', super_admin:'Суперадміністратор', superadmin:'Суперадміністратор', 'super-admin':'Суперадміністратор' };
   function normalizeRole(v){
