@@ -1,20 +1,39 @@
 (function(){
   const cfg = window.REBUS_CONFIG || {};
 
+  function setLargeFavicon(){
+    document.querySelectorAll('link[rel="icon"], link[rel="shortcut icon"], link[rel="apple-touch-icon"]').forEach(x => x.remove());
+    const svgIcon = document.createElement('link');
+    svgIcon.rel = 'icon';
+    svgIcon.type = 'image/svg+xml';
+    svgIcon.href = 'assets/favicon-rebus.svg?v=20260624-large-favicon';
+    document.head.appendChild(svgIcon);
+  }
+
   function injectAdminSidebarStyles(){
-    if (document.querySelector('link[data-rebus-sidebar-collapse]')) return;
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = 'css/admin-sidebar-collapse.css?v=20260624-sidebar-collapse';
-    link.dataset.rebusSidebarCollapse = 'true';
-    document.head.appendChild(link);
+    setLargeFavicon();
+    if (!document.querySelector('link[data-rebus-sidebar-collapse]')) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = 'css/admin-sidebar-collapse.css?v=20260624-sidebar-collapse';
+      link.dataset.rebusSidebarCollapse = 'true';
+      document.head.appendChild(link);
+    }
 
     if (!document.querySelector('link[data-rebus-admin-hotfix]')) {
       const hotfix = document.createElement('link');
       hotfix.rel = 'stylesheet';
-      hotfix.href = 'css/admin-hotfix.css?v=20260624-role-status-modal';
+      hotfix.href = 'css/admin-hotfix.css?v=20260624-toggle-favicon-logo';
       hotfix.dataset.rebusAdminHotfix = 'true';
       document.head.appendChild(hotfix);
+    }
+
+    if (location.pathname.endsWith('/users.html') && !document.querySelector('script[data-rebus-users-hotfix]')) {
+      const script = document.createElement('script');
+      script.src = 'js/admin-users-hotfix.js?v=20260624-status-toggle';
+      script.defer = true;
+      script.dataset.rebusUsersHotfix = 'true';
+      document.head.appendChild(script);
     }
   }
   injectAdminSidebarStyles();
