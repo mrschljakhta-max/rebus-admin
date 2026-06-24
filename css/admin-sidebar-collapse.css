@@ -1,4 +1,4 @@
-/* REBUS Admin collapsible sidebar v20260624 — custom PNG icons */
+/* REBUS Admin collapsible sidebar v20260624 — custom icon set */
 @media (min-width: 901px) {
   .app-shell {
     grid-template-columns: 86px 1fr !important;
@@ -102,11 +102,11 @@
     transition: opacity .18s ease, filter .18s ease, transform .18s ease;
   }
 
-  .nav a[href*="dashboard"]::before { background-image: url("assets/icons/home.png"); }
-  .nav a[href*="users"]::before { background-image: url("assets/icons/users.png"); }
-  .nav a[href*="access"]::before { background-image: url("assets/icons/add-user.png"); }
-  .nav a[href*="contours"]::before { background-image: url("assets/icons/contours.png"); }
-  .nav a[href*="events"]::before { background-image: url("assets/icons/journal.png"); }
+  .nav a[href*="dashboard"]::before { background-image: url("https://cdn-icons-png.flaticon.com/512/1946/1946488.png"); }
+  .nav a[href*="users"]::before { background-image: url("https://cdn-icons-png.flaticon.com/512/11397/11397320.png"); }
+  .nav a[href*="access"]::before { background-image: url("https://cdn-icons-png.flaticon.com/512/7183/7183230.png"); }
+  .nav a[href*="contours"]::before { background-image: url("https://cdn-icons-png.flaticon.com/512/1534/1534952.png"); }
+  .nav a[href*="events"]::before { background-image: url("https://cdn-icons-png.flaticon.com/512/2311/2311524.png"); }
 
   .nav a.active::before,
   .nav a:hover::before {
@@ -145,7 +145,7 @@
     flex: 0 0 23px;
     width: 23px;
     height: 23px;
-    background: url("assets/icons/power-off.png") center/contain no-repeat;
+    background: url("https://cdn-icons-png.flaticon.com/512/1828/1828490.png") center/contain no-repeat;
     opacity: .9;
     filter: invert(1) brightness(1.25) drop-shadow(0 0 10px rgba(255,255,255,.18));
   }
