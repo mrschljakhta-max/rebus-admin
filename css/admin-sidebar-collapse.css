@@ -1,4 +1,4 @@
-/* REBUS Admin collapsible sidebar v20260624 */
+/* REBUS Admin collapsible sidebar v20260624 — custom PNG icons */
 @media (min-width: 901px) {
   .app-shell {
     grid-template-columns: 86px 1fr !important;
@@ -89,27 +89,30 @@
   }
 
   .nav a::before {
-    content: "•";
+    content: "";
     flex: 0 0 24px;
     width: 24px;
     height: 24px;
-    display: grid;
-    place-items: center;
-    color: rgba(255,255,255,.78);
-    font-size: 21px;
-    line-height: 1;
-    filter: drop-shadow(0 0 10px rgba(192,52,80,.18));
+    display: block;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: contain;
+    opacity: .82;
+    filter: invert(1) brightness(1.22) drop-shadow(0 0 10px rgba(192,52,80,.18));
+    transition: opacity .18s ease, filter .18s ease, transform .18s ease;
   }
 
-  .nav a[href*="dashboard"]::before { content: "⌂"; }
-  .nav a[href*="users"]::before { content: "◉"; }
-  .nav a[href*="access"]::before { content: "＋"; }
-  .nav a[href*="contours"]::before { content: "⬡"; }
-  .nav a[href*="events"]::before { content: "≡"; }
+  .nav a[href*="dashboard"]::before { background-image: url("assets/icons/home.png"); }
+  .nav a[href*="users"]::before { background-image: url("assets/icons/users.png"); }
+  .nav a[href*="access"]::before { background-image: url("assets/icons/add-user.png"); }
+  .nav a[href*="contours"]::before { background-image: url("assets/icons/contours.png"); }
+  .nav a[href*="events"]::before { background-image: url("assets/icons/journal.png"); }
 
   .nav a.active::before,
   .nav a:hover::before {
-    color: #ff6b8b;
+    opacity: 1;
+    transform: scale(1.06);
+    filter: invert(47%) sepia(87%) saturate(1615%) hue-rotate(314deg) brightness(108%) contrast(102%) drop-shadow(0 0 14px rgba(255,107,139,.42));
   }
 
   .nav a.active,
@@ -138,10 +141,18 @@
   }
 
   .logout-btn::before {
-    content: "⏻";
-    color: rgba(255,255,255,.92);
-    font-size: 22px;
-    line-height: 1;
+    content: "";
+    flex: 0 0 23px;
+    width: 23px;
+    height: 23px;
+    background: url("assets/icons/power-off.png") center/contain no-repeat;
+    opacity: .9;
+    filter: invert(1) brightness(1.25) drop-shadow(0 0 10px rgba(255,255,255,.18));
+  }
+
+  .logout-btn:hover::before {
+    opacity: 1;
+    filter: invert(47%) sepia(87%) saturate(1615%) hue-rotate(314deg) brightness(108%) contrast(102%) drop-shadow(0 0 14px rgba(255,107,139,.45));
   }
 
   .sidebar:hover .logout-btn,
@@ -154,6 +165,8 @@
 
   .sidebar:hover .logout-btn::before,
   .sidebar:focus-within .logout-btn::before {
-    font-size: 18px;
+    width: 20px;
+    height: 20px;
+    flex-basis: 20px;
   }
 }
