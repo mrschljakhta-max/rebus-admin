@@ -3,11 +3,20 @@
 
   function setLargeFavicon(){
     document.querySelectorAll('link[rel="icon"], link[rel="shortcut icon"], link[rel="apple-touch-icon"]').forEach(x => x.remove());
-    const svgIcon = document.createElement('link');
-    svgIcon.rel = 'icon';
-    svgIcon.type = 'image/svg+xml';
-    svgIcon.href = 'assets/favicon-rebus.svg?v=20260624-logo-render-fix';
-    document.head.appendChild(svgIcon);
+
+    const lightIcon = document.createElement('link');
+    lightIcon.rel = 'icon';
+    lightIcon.type = 'image/svg+xml';
+    lightIcon.href = 'assets/favicon-rebus-black.svg?v=20260625-theme-favicon';
+    lightIcon.media = '(prefers-color-scheme: light)';
+    document.head.appendChild(lightIcon);
+
+    const darkIcon = document.createElement('link');
+    darkIcon.rel = 'icon';
+    darkIcon.type = 'image/svg+xml';
+    darkIcon.href = 'assets/favicon-rebus.svg?v=20260625-theme-favicon';
+    darkIcon.media = '(prefers-color-scheme: dark)';
+    document.head.appendChild(darkIcon);
   }
 
   function injectAdminSidebarStyles(){
